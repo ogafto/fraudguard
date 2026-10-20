@@ -25,7 +25,6 @@ function Counter({ to, decimals = 0, suffix = "" }: { to: number; decimals?: num
 
 type StatView = { to?: number; text?: string; decimals?: number; prefix?: string; suffix?: string; label: string };
 
-/** "~0,2 ms" counts up as a number with a prefix and suffix; text without a number, or with a dot like "1.20+", is shown as is. */
 function parse(value: string, label: string): StatView {
   const m = value.match(/^([^\d.]*?)(\d+(?:,\d+)?)([^\d.]*)$/);
   if (!m) return { text: value, label };
@@ -34,7 +33,6 @@ function parse(value: string, label: string): StatView {
 }
 
 export function Stats() {
-  // Product facts only: no invented user counts or accuracy percentages. Edited in the CMS.
   const STATS = useContent("home").stats.map((s) => parse(s.value, s.label));
   return (
     <section className="px-4 pb-6 pt-8 sm:px-6" aria-label="FraudGuard w liczbach">

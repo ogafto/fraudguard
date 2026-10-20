@@ -10,14 +10,12 @@ function hash(str: string) {
   return h >>> 0;
 }
 
-/** Real skin texture for a player: their own skin if bundled, else one of the default skins. */
 export function skinUrl(name: string) {
   const key = name.toLowerCase();
   if (OWN.has(key)) return `/mc/skin/${key}.png`;
   return `/mc/skin/${SKINS[hash(key) % SKINS.length]}.png`;
 }
 
-/** Player face cropped from the real 64×64 skin: face layer plus the hat overlay. */
 export function McHead({ name, className }: { name: string; className?: string }) {
   const src = skinUrl(name);
   return (

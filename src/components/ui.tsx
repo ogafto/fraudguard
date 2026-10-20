@@ -6,13 +6,8 @@ import { useRef, type ComponentProps, type PointerEvent, type ReactNode } from "
 
 export const EASE = [0.16, 1, 0.3, 1] as const;
 
-/* ------------------------------------------------------------------ */
-/* Reveal helpers                                                      */
-/* ------------------------------------------------------------------ */
-
 type Segment = string | { text: string; className?: string };
 
-/** Words fade up out of a soft blur, one after another. */
 export function SplitReveal({
   segments,
   className,
@@ -89,7 +84,6 @@ export function FadeIn({
   );
 }
 
-/** Slides in from a direction when scrolled into view. */
 export function Reveal({
   children,
   from = "up",
@@ -124,7 +118,6 @@ export function Reveal({
   );
 }
 
-/** Moves its content slower/faster than the page while scrolling. */
 export function Parallax({ children, offset = 60, className }: { children: ReactNode; offset?: number; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
@@ -136,11 +129,6 @@ export function Parallax({ children, offset = 60, className }: { children: React
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Section heading                                                     */
-/* ------------------------------------------------------------------ */
-
-/** Pill badge with a slowly travelling light on its border. */
 export function Badge({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <span
@@ -163,7 +151,6 @@ export function Eyebrow({ children }: { children: ReactNode }) {
   );
 }
 
-/** Everything after the line break is rendered in a dimmer tone. */
 function muteAfterBreak(title: Segment[]): Segment[] {
   let after = false;
   return title.map((s) => {
@@ -204,10 +191,6 @@ export function SectionHeading({
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Card with cursor light                                              */
-/* ------------------------------------------------------------------ */
-
 export function Card({ className, children, ...rest }: ComponentProps<"div">) {
   const ref = useRef<HTMLDivElement>(null);
   const move = (e: PointerEvent<HTMLDivElement>) => {
@@ -231,10 +214,6 @@ export function Card({ className, children, ...rest }: ComponentProps<"div">) {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Buttons                                                             */
-/* ------------------------------------------------------------------ */
-
 export function Arrow({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 16 16" fill="none" className={className ?? "size-3.5"} aria-hidden>
@@ -243,7 +222,6 @@ export function Arrow({ className }: { className?: string }) {
   );
 }
 
-/** Label that rolls up to a copy of itself on hover. */
 function Roll({ children }: { children: ReactNode }) {
   return (
     <span className="relative inline-flex h-[1.25em] flex-col overflow-hidden leading-[1.25em]">

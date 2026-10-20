@@ -1,7 +1,3 @@
-/**
- * Detection modules shown on the landing page and in the client panel.
- * Placeholder list; adjust to what the anti-cheat actually ships.
- */
 export type CheckStatus = "stabilny" | "beta";
 export type Check = { name: string; types: number; desc: string; status: CheckStatus };
 

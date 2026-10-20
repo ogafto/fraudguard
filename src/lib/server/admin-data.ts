@@ -2,9 +2,6 @@ import "server-only";
 import { randomInt } from "node:crypto";
 import { db } from "./db";
 
-// Read models for the admin panel. Times come back as epoch milliseconds and money as grosze,
-// so both drivers (Neon and PGlite) return plain numbers.
-
 const ms = (col: string) => `(extract(epoch from ${col}) * 1000)::float8`;
 
 export type AdminUser = {
@@ -147,10 +144,6 @@ export async function getOverview(): Promise<AdminOverview> {
   };
 }
 
-/* ------------------------------------------------------------------ */
-/* Writes                                                              */
-/* ------------------------------------------------------------------ */
-
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const licenseKey = () =>
   "FG-" +
@@ -165,7 +158,6 @@ export async function findUserByEmail(email: string) {
 
 type Plan = { id: string; name: string };
 
-/** Creates a licence: monthly ones run for 30 days, lifetime ones never expire. */
 export async function createLicense(userId: string | null, plan: Plan, billing: "monthly" | "lifetime", purchaseId: string | null) {
   const key = licenseKey();
   await db(
@@ -176,10 +168,6 @@ export async function createLicense(userId: string | null, plan: Plan, billing: 
   return key;
 }
 
-/**
- * Records a purchase paid on Discord. A monthly payment extends the user's active monthly licence
- * for the same plan by 30 days; otherwise a new licence is created.
- */
 export async function recordPurchase(input: { userId: string; plan: Plan; billing: "monthly" | "lifetime"; amount: number; note: string; author: string }) {
   const id = crypto.randomUUID();
   await db(
@@ -201,7 +189,6 @@ export async function recordPurchase(input: { userId: string; plan: Plan; billin
 
 export async function setPurchaseStatus(id: string, status: "paid" | "refunded") {
   await db(`update purchases set status = $2 where id = $1`, [id, status]);
-  // A refund also suspends the licence bought with it.
   if (status === "refunded") await db(`update licenses set status = 'suspended' where purchase_id = $1`, [id]);
 }
 

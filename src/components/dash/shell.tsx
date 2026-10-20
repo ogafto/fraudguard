@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode, type SVGProps } from "react";
 import {
-  IconBell,
   IconBox,
   IconCard,
   IconChart,
@@ -15,38 +14,34 @@ import {
   IconLogs,
   IconServer,
   IconSliders,
-  IconTicket,
   IconUsers,
   IconCog,
   IconSearch,
 } from "../icons";
 import { logout } from "@/lib/auth";
-import { SERVERS } from "@/lib/mock";
 import { LogoMark } from "../logo";
 import { McHead } from "../mc-head";
 
 type NavItem = { label: string; href: string; Icon: ComponentType<SVGProps<SVGSVGElement>>; badge?: string };
 
-/** The signed in user shown in the sidebar. */
-export type DashUser = { nick: string; email: string };
+export type DashUser = { nick: string; email: string; role: "client" | "admin"; plan: string | null };
 
 const NAV: Record<"client" | "admin", { label: string; items: NavItem[] }[]> = {
   client: [
     {
-      label: "Ochrona",
+      label: "Anticheat",
       items: [
         { label: "Przegląd", href: "/panel", Icon: IconGrid },
-        { label: "Alerty", href: "/panel/alerty", Icon: IconBell, badge: "12" },
+        { label: "Ustawienia anticheata", href: "/panel/checki", Icon: IconSliders },
         { label: "Serwery", href: "/panel/serwery", Icon: IconServer },
-        { label: "Checki", href: "/panel/checki", Icon: IconSliders },
       ],
     },
     {
       label: "Konto",
       items: [
-        { label: "Licencja i pobieranie", href: "/panel/licencja", Icon: IconKey },
-        { label: "Płatności", href: "/panel/platnosci", Icon: IconCard },
-        { label: "Ustawienia", href: "/panel/ustawienia", Icon: IconCog },
+        { label: "Pakiet i pobieranie", href: "/panel/licencja", Icon: IconKey },
+        { label: "Zakupy", href: "/panel/platnosci", Icon: IconCard },
+        { label: "Ustawienia konta", href: "/panel/ustawienia", Icon: IconCog },
       ],
     },
   ],
@@ -68,7 +63,6 @@ const NAV: Record<"client" | "admin", { label: string; items: NavItem[] }[]> = {
       label: "Produkt",
       items: [
         { label: "Wydania", href: "/admin/wydania", Icon: IconBox },
-        { label: "Zgłoszenia", href: "/admin/zgloszenia", Icon: IconTicket, badge: "2" },
       ],
     },
     {
@@ -133,7 +127,7 @@ function Sidebar({ variant, user, onNavigate }: { variant: "client" | "admin"; u
         <McHead name={user.nick} className="size-8 rounded-lg" />
         <div className="min-w-0 flex-1">
           <div className="truncate text-[13px] font-medium">{user.nick}</div>
-          <div className="truncate text-[12px] text-dim">{variant === "admin" ? "Administrator" : "Survival.pl · plan Pro"}</div>
+          <div className="truncate text-[12px] text-dim">{variant === "admin" ? "Administrator" : user.plan ? `Pakiet ${user.plan}` : "Brak pakietu"}</div>
         </div>
         <form action={logout}>
           <button type="submit" className="rounded-md p-1.5 text-dim transition-colors hover:bg-white/[0.05] hover:text-fg" aria-label="Wyloguj">
@@ -145,15 +139,11 @@ function Sidebar({ variant, user, onNavigate }: { variant: "client" | "admin"; u
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Command palette (⌘K) and top bar                                    */
-/* ------------------------------------------------------------------ */
-
 const isActivePath = (pathname: string, href: string) => (href === "/panel" || href === "/admin" ? pathname === href : pathname.startsWith(href));
 
 const LOGOUT = "#wyloguj";
 
-function Palette({ variant, onClose }: { variant: "client" | "admin"; onClose: () => void }) {
+function Palette({ variant, isAdmin, onClose }: { variant: "client" | "admin"; isAdmin: boolean; onClose: () => void }) {
   const router = useRouter();
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(0);
@@ -161,11 +151,11 @@ function Palette({ variant, onClose }: { variant: "client" | "admin"; onClose: (
   const all = useMemo(
     () => [
       ...NAV[variant].flatMap((g) => g.items.map((it) => ({ ...it, group: g.label }))),
-      { label: variant === "admin" ? "Panel klienta" : "Panel admina", href: variant === "admin" ? "/panel" : "/admin", Icon: IconGrid, group: "Przejdź" },
+      ...(variant === "admin" || isAdmin ? [{ label: variant === "admin" ? "Panel klienta" : "Panel admina", href: variant === "admin" ? "/panel" : "/admin", Icon: IconGrid, group: "Przejdź" }] : []),
       { label: "Strona główna", href: "/", Icon: IconBox, group: "Przejdź" },
       { label: "Wyloguj", href: LOGOUT, Icon: IconLogout, group: "Konto" },
     ],
-    [variant],
+    [variant, isAdmin],
   );
   const list = all.filter((it) => it.label.toLowerCase().includes(q.trim().toLowerCase()));
   const cur = Math.min(sel, Math.max(0, list.length - 1));
@@ -240,7 +230,7 @@ function Palette({ variant, onClose }: { variant: "client" | "admin"; onClose: (
   );
 }
 
-function TopBar({ variant, onSearch }: { variant: "client" | "admin"; onSearch: () => void }) {
+function TopBar({ variant, user, onSearch }: { variant: "client" | "admin"; user: DashUser; onSearch: () => void }) {
   const pathname = usePathname();
   const current = NAV[variant].flatMap((g) => g.items).find((it) => isActivePath(pathname, it.href));
   return (
@@ -262,10 +252,21 @@ function TopBar({ variant, onSearch }: { variant: "client" | "admin"; onSearch: 
         </AnimatePresence>
       </nav>
       <div className="ml-auto flex items-center gap-2">
-        <span className="flex items-center gap-2 rounded-full px-3 py-1.5 text-[12.5px] text-muted shadow-[0_0_0_1px_rgba(255,255,255,0.07)]">
-          <span className="size-1.5 animate-pulse-dot rounded-full bg-ok text-ok/50" />
-          {variant === "admin" ? "Wszystkie systemy działają" : `${SERVERS.filter((x) => x.online).length} z ${SERVERS.length} serwerów online`}
-        </span>
+        {variant === "client" ? (
+          <Link
+            href="/panel/licencja"
+            className="flex items-center gap-2 rounded-full px-3 py-1.5 text-[12.5px] text-muted shadow-[0_0_0_1px_rgba(255,255,255,0.07)] transition-colors hover:text-fg"
+          >
+            <span className={`size-1.5 rounded-full ${user.plan ? "animate-pulse-dot bg-ok text-ok/50" : "bg-dim"}`} />
+            {user.plan ? `Pakiet ${user.plan} aktywny` : "Brak pakietu"}
+          </Link>
+        ) : (
+          user.role === "admin" && (
+            <Link href="/panel" className="rounded-full px-3 py-1.5 text-[12.5px] text-muted shadow-[0_0_0_1px_rgba(255,255,255,0.07)] transition-colors hover:text-fg">
+              Mój panel klienta
+            </Link>
+          )
+        )}
         <button
           onClick={onSearch}
           className="flex h-9 w-56 items-center gap-2.5 rounded-full bg-white/[0.03] px-3.5 text-[13px] text-dim shadow-[0_0_0_1px_rgba(255,255,255,0.08)] transition-colors hover:bg-white/[0.05] hover:text-muted"
@@ -300,7 +301,6 @@ export function DashShell({ variant, user, children }: { variant: "client" | "ad
         <Sidebar variant={variant} user={user} />
       </aside>
 
-      {/* Mobile top bar */}
       <div className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-line bg-bg/80 px-4 backdrop-blur-xl lg:hidden">
         <Link href="/" className="flex items-center gap-2">
           <span className="flex size-7 items-center justify-center rounded-lg bg-fg">
@@ -343,8 +343,8 @@ export function DashShell({ variant, user, children }: { variant: "client" | "ad
         )}
       </AnimatePresence>
 
-      <TopBar variant={variant} onSearch={() => setPalette(true)} />
-      <AnimatePresence>{palette && <Palette variant={variant} onClose={() => setPalette(false)} />}</AnimatePresence>
+      <TopBar variant={variant} user={user} onSearch={() => setPalette(true)} />
+      <AnimatePresence>{palette && <Palette variant={variant} isAdmin={user.role === "admin"} onClose={() => setPalette(false)} />}</AnimatePresence>
 
       <main className="mx-auto w-full max-w-[1280px] px-4 pb-16 pt-6 sm:px-8 sm:pt-8">{children}</main>
     </div>

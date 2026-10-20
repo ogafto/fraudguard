@@ -54,7 +54,6 @@ export function PricingV2() {
                 onPointerEnter={() => setHover(i)}
                 className={`relative flex flex-col p-8 sm:p-10 ${i > 0 ? "border-t border-line md:border-l md:border-t-0" : ""}`}
               >
-                {/* highlight that glides between columns */}
                 {hover === i && (
                   <motion.span
                     layoutId="price-hover"

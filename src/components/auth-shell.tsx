@@ -15,10 +15,6 @@ import { EASE } from "./ui";
 
 type Step = "register" | "verify" | "verified" | "login" | "reset" | "resetSent" | "newPassword" | "loggedIn";
 
-/* ------------------------------------------------------------------ */
-/* Small pieces                                                        */
-/* ------------------------------------------------------------------ */
-
 function Screen({ id, children }: { id: string; children: ReactNode }) {
   return (
     <motion.div
@@ -42,7 +38,6 @@ function Title({ children, sub }: { children: ReactNode; sub?: ReactNode }) {
   );
 }
 
-/** Live preview of the player's head while they type their nick. */
 function NickHead({ nick }: { nick: string }) {
   const [shown, setShown] = useState(nick);
   useEffect(() => {
@@ -63,7 +58,6 @@ function NickHead({ nick }: { nick: string }) {
           transition={{ type: "spring", stiffness: 300, damping: 20 }}
         >
           {valid && !own ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img src={`https://mc-heads.net/avatar/${shown}/48`} alt="" className="size-full [image-rendering:pixelated]" />
           ) : (
             <McHead name={own ? "aftoxd" : "steve"} className="size-full" />
@@ -105,7 +99,6 @@ function Steps({ step }: { step: Step }) {
   );
 }
 
-/** Envelope that drops in and a little paper sliding out, for "check your inbox". */
 function MailIcon() {
   return (
     <motion.div
@@ -136,7 +129,6 @@ function MailIcon() {
   );
 }
 
-/** Check mark drawn inside rings that ripple out once. */
 function SuccessMark() {
   return (
     <div className="relative mb-8 flex size-16 items-center justify-center">
@@ -172,7 +164,6 @@ function SuccessMark() {
   );
 }
 
-/** Goes to the panel after a short countdown shown as a filling bar. */
 function RedirectBar({ to, seconds = 3 }: { to: string; seconds?: number }) {
   const router = useRouter();
   useEffect(() => {
@@ -205,11 +196,6 @@ function DiscordButton() {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Shell                                                               */
-/* ------------------------------------------------------------------ */
-
-/** `newPassword` is the page behind the link in the reset email: /nowe-haslo?token=… */
 export function AuthShell({ mode }: { mode: "login" | "register" | "newPassword" }) {
   const [step, setStep] = useState<Step>(mode);
   const [busy, setBusy] = useState(false);
@@ -501,7 +487,6 @@ export function AuthShell({ mode }: { mode: "login" | "register" | "newPassword"
         </div>
       </main>
 
-      {/* Product side */}
       <aside className="relative hidden overflow-hidden border-l border-line bg-[#0a0b0c] lg:block">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_30%_0%,rgba(255,255,255,0.09),transparent_70%)]" />
         <div className="absolute inset-0 [background-image:linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] [background-size:64px_64px] [mask-image:radial-gradient(ellipse_70%_60%_at_30%_0%,#000,transparent)]" />

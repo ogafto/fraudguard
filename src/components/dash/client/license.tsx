@@ -1,94 +1,132 @@
 "use client";
 
-import { useState } from "react";
-import { LICENSE, RELEASES } from "@/lib/mock";
-import { IconCopy, IconDownload } from "../../icons";
-import { Block, PageHeader, Pill, StatusDot } from "../ui";
+import { motion } from "motion/react";
+import type { AccountLicense, Release } from "@/lib/server/account";
+import { IconBox, IconDownload, IconKey } from "../../icons";
+import { EASE } from "../../ui";
+import { Block, PageHeader, Pill } from "../ui";
+import { CopyKey, daysLeft, DiscordButton, EmptyState, formatDate, Locked } from "./common";
 
-export function ClientLicense() {
-  const [reveal, setReveal] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const key = reveal ? LICENSE.key : LICENSE.key.replace(/(?<=FG-).+/, "••••-••••-••••-••••");
+export function ClientLicense({ email, licenses, releases }: { email: string; licenses: AccountLicense[]; releases: Release[] }) {
+  const active = licenses.filter((l) => l.active);
+  const latest = releases[0] ?? null;
+
+  if (active.length === 0) {
+    return (
+      <>
+        <PageHeader title="Pakiet i pobieranie" desc="Twój klucz licencji i plik pluginu." />
+        <Locked email={email}>Nie masz jeszcze aktywnego pakietu</Locked>
+        {licenses.length > 0 && <History licenses={licenses} />}
+      </>
+    );
+  }
 
   return (
     <>
-      <PageHeader title="Licencja i pobieranie" desc="Klucz licencyjny, pliki pluginu i historia zmian." />
+      <PageHeader
+        title="Pakiet i pobieranie"
+        desc="Klucz licencji wpisujesz w config.yml pluginu."
+        actions={
+          latest ? (
+            <a href={latest.url} target="_blank" rel="noopener noreferrer" className="inline-flex h-9 items-center gap-2 rounded-full bg-fg px-4 text-[13.5px] font-medium text-bg transition-colors hover:bg-[#e4e5e7]">
+              <IconDownload className="size-4" />
+              Pobierz {latest.version}
+            </a>
+          ) : undefined
+        }
+      />
 
-      <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
-        <Block title="Klucz licencyjny">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <div className="text-[20px] font-medium">Plan {LICENSE.plan}</div>
-              <div className="mt-1 text-[13.5px] text-muted">Odnowienie {LICENSE.renews}</div>
-            </div>
-            <StatusDot>aktywna</StatusDot>
-          </div>
-          <div className="mt-5 flex items-center gap-2 rounded-lg bg-white/[0.03] p-1 pl-3 shadow-[0_0_0_1px_rgba(255,255,255,0.08)]">
-            <code className="flex-1 truncate font-mono text-[14px] tracking-wide">{key}</code>
-            <button onClick={() => setReveal((r) => !r)} className="h-8 rounded-md px-3 text-[12.5px] text-muted transition-colors hover:text-fg">
-              {reveal ? "Ukryj" : "Pokaż"}
-            </button>
-            <button
-              onClick={() => {
-                navigator.clipboard?.writeText(LICENSE.key).catch(() => {});
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1500);
-              }}
-              className="inline-flex h-8 items-center gap-1.5 rounded-md bg-white/[0.06] px-3 text-[12.5px] transition-colors hover:bg-white/[0.1]"
+      <div className="grid gap-4">
+        {active.map((l, i) => {
+          const left = daysLeft(l.expiresAt);
+          return (
+            <motion.section
+              key={l.id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, ease: EASE, delay: i * 0.06 }}
+              className="card p-6"
             >
-              <IconCopy className="size-3.5" />
-              {copied ? "Skopiowano" : "Kopiuj"}
-            </button>
-          </div>
-          <p className="mt-3 text-[13px] text-dim">Nie udostępniaj klucza. Możesz go w każdej chwili wygenerować ponownie.</p>
-          <button className="mt-4 text-[13px] text-muted underline-offset-4 transition-colors hover:text-fg hover:underline">
-            Wygeneruj nowy klucz
-          </button>
-        </Block>
-
-        <Block title="Instalacja">
-          <ol className="space-y-4 text-[14px]">
-            {[
-              "Pobierz plik FraudGuard-2.0.0.jar poniżej.",
-              "Wrzuć go do folderu /plugins na serwerze.",
-              "Wpisz klucz w plugins/FraudGuard/config.yml.",
-              "Zrestartuj serwer i gotowe.",
-            ].map((t, i) => (
-              <li key={t} className="flex gap-3">
-                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-[12px] font-medium">{i + 1}</span>
-                <span className="pt-0.5 text-muted">{t}</span>
-              </li>
-            ))}
-          </ol>
-        </Block>
-      </div>
-
-      <Block title="Wersje" pad={false} className="mt-4" delay={0.1}>
-        <ul className="divide-y divide-line/70">
-          {RELEASES.map((r) => (
-            <li key={r.version} className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start">
-              <div className="w-44 shrink-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-[15px]">{r.version}</span>
-                  <Pill tone={r.channel === "beta" ? "warn" : "default"}>{r.channel}</Pill>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="flex size-10 items-center justify-center rounded-xl bg-white/[0.05] shadow-[0_0_0_1px_rgba(255,255,255,0.08)]">
+                  <IconKey className="size-[18px]" />
+                </span>
+                <div>
+                  <div className="text-[16px] font-medium">Pakiet {l.planName}</div>
+                  <div className="text-[13px] text-dim">
+                    {l.billing === "lifetime" ? "Dożywotnio" : `Ważny do ${formatDate(l.expiresAt)}${left !== null ? `, zostało ${left} dni` : ""}`}
+                  </div>
                 </div>
-                <div className="mt-1 text-[12.5px] text-dim">
-                  {r.date} · {r.size}
-                </div>
+                <span className="ml-auto">
+                  <Pill tone={left !== null && left <= 5 ? "warn" : "ok"}>{left !== null && left <= 5 ? "kończy się" : "aktywny"}</Pill>
+                </span>
               </div>
-              <ul className="flex-1 space-y-1 text-[13.5px] text-muted">
-                {r.notes.map((n) => (
-                  <li key={n} className="flex gap-2"><span className="mt-[9px] size-1 shrink-0 rounded-full bg-white/40" />{n}</li>
-                ))}
-              </ul>
-              <button className="inline-flex h-9 items-center gap-2 self-start rounded-full bg-white/[0.06] px-4 text-[13px] font-medium ring-1 ring-inset ring-white/[0.1] transition-colors hover:bg-white/[0.1]">
-                <IconDownload className="size-3.5" />
-                Pobierz .jar
-              </button>
-            </li>
-          ))}
-        </ul>
-      </Block>
+              <CopyKey value={l.key} className="mt-5" />
+              {l.billing === "monthly" && (
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-[13px] text-dim">
+                  Przedłużenie opłacasz na Discordzie, a dni dopiszą się do tego samego klucza.
+                  <DiscordButton>Przedłuż pakiet</DiscordButton>
+                </div>
+              )}
+            </motion.section>
+          );
+        })}
+
+        <Block title="Wersje pluginu" pad={false} delay={0.1}>
+          {releases.length === 0 ? (
+            <EmptyState Icon={IconBox} title="Pierwsza wersja pojawi się tutaj">
+              Dostaniesz ją od razu po publikacji. Informację znajdziesz też na naszym Discordzie.
+            </EmptyState>
+          ) : (
+            <ul className="divide-y divide-line">
+              {releases.map((r, i) => (
+                <li key={r.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-start">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2.5">
+                      <span className="font-mono text-[14.5px]">v{r.version}</span>
+                      {i === 0 && <Pill tone="ok">najnowsza</Pill>}
+                      <span className="text-[12.5px] text-dim">{formatDate(r.createdAt)}</span>
+                    </div>
+                    {r.notes && (
+                      <ul className="mt-2 space-y-1 text-[13px] text-muted">
+                        {r.notes
+                          .split("\n")
+                          .filter((x) => x.trim())
+                          .map((x, k) => (
+                            <li key={k} className="flex gap-2">
+                              <span className="mt-[0.6em] size-1 shrink-0 rounded-full bg-white/30" />
+                              {x.trim()}
+                            </li>
+                          ))}
+                      </ul>
+                    )}
+                  </div>
+                  <a href={r.url} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 shrink-0 items-center gap-1.5 self-start rounded-full bg-white/[0.05] px-3.5 text-[12.5px] shadow-[0_0_0_1px_rgba(255,255,255,0.08)] transition-colors hover:bg-white/[0.09]">
+                    <IconDownload className="size-3.5" />
+                    Pobierz
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Block>
+        {licenses.length > active.length && <History licenses={licenses.filter((l) => !l.active)} />}
+      </div>
     </>
+  );
+}
+
+function History({ licenses }: { licenses: AccountLicense[] }) {
+  return (
+    <Block title="Wcześniejsze pakiety" pad={false} className="mt-4" delay={0.15}>
+      <ul className="divide-y divide-line">
+        {licenses.map((l) => (
+          <li key={l.id} className="flex items-center justify-between gap-3 px-5 py-3.5 text-[13.5px]">
+            <span>Pakiet {l.planName}</span>
+            <span className="text-dim">{l.status === "suspended" ? "wstrzymany" : `wygasł ${formatDate(l.expiresAt)}`}</span>
+          </li>
+        ))}
+      </ul>
+    </Block>
   );
 }

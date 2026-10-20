@@ -2,8 +2,6 @@
 
 import { animate, motion, useInView } from "motion/react";
 import { useEffect, useRef, type ReactNode } from "react";
-import type { AlertAction } from "@/lib/mock";
-import { McHead } from "../mc-head";
 import { EASE } from "../ui";
 
 export function PageHeader({ title, desc, actions }: { title: string; desc?: string; actions?: ReactNode }) {
@@ -23,7 +21,6 @@ export function PageHeader({ title, desc, actions }: { title: string; desc?: str
   );
 }
 
-/** Animated container used by every dashboard block. */
 export function Block({
   children,
   className,
@@ -57,7 +54,6 @@ export function Block({
   );
 }
 
-/** Counts the number inside a string like "3 912", "18 420 zł" or "0,21 ms" up from zero. */
 function CountUp({ value, delay = 0 }: { value: string; delay?: number }) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true });
@@ -65,7 +61,6 @@ function CountUp({ value, delay = 0 }: { value: string; delay?: number }) {
   useEffect(() => {
     const m = value.match(/^(\D*?)(\d[\d\s\u00a0]*(?:,\d+)?)(.*)$/);
     if (!ref.current) return;
-    // Count once; later value changes (live data) just show the new number.
     if (!m || done.current) {
       ref.current.textContent = value;
       return;
@@ -146,17 +141,6 @@ export function Stat({
   );
 }
 
-const ACTION_STYLE: Record<AlertAction, string> = {
-  flaga: "text-muted bg-white/[0.05]",
-  cofnięcie: "text-warn bg-warn/10",
-  kick: "text-fg bg-white/[0.09]",
-  ban: "text-danger bg-danger/10",
-};
-
-export function ActionBadge({ action }: { action: AlertAction }) {
-  return <span className={`rounded-md px-1.5 py-0.5 text-[12px] font-medium ${ACTION_STYLE[action]}`}>{action}</span>;
-}
-
 export function StatusDot({ tone = "ok", children }: { tone?: "ok" | "warn" | "danger" | "dim"; children: ReactNode }) {
   const c = { ok: "bg-ok", warn: "bg-warn", danger: "bg-danger", dim: "bg-dim" }[tone];
   return (
@@ -177,19 +161,6 @@ export function Pill({ children, tone = "default" }: { children: ReactNode; tone
   return <span className={`inline-flex rounded-md px-1.5 py-0.5 text-[12px] font-medium ${c}`}>{children}</span>;
 }
 
-export function Player({ name, sub }: { name: string; sub?: string }) {
-  return (
-    <span className="flex min-w-0 items-center gap-2.5">
-      <McHead name={name} className="size-6 shrink-0 rounded-[5px]" />
-      <span className="min-w-0">
-        <span className="block truncate text-[13.5px] text-fg">{name}</span>
-        {sub && <span className="block truncate text-[12px] text-dim">{sub}</span>}
-      </span>
-    </span>
-  );
-}
-
-/** Simple table with sticky header styling. */
 export function Table({ head, children }: { head: string[]; children: ReactNode }) {
   return (
     <div className="overflow-x-auto">
@@ -215,58 +186,6 @@ export function Td({ children, right = false, className }: { children: ReactNode
   return <td className={`px-5 py-3 ${right ? "text-right" : ""} ${className ?? ""}`}>{children}</td>;
 }
 
-/** Stacked bar chart (e.g. detections by category per day). */
-export function StackedBars({
-  data,
-  keys,
-  labelKey,
-}: {
-  data: Record<string, number | string>[];
-  keys: { key: string; label: string; className: string }[];
-  labelKey: string;
-}) {
-  const totals = data.map((d) => keys.reduce((a, k) => a + Number(d[k.key]), 0));
-  const max = Math.max(...totals);
-  return (
-    <div>
-      <div className="flex h-48 items-end gap-3">
-        {data.map((d, i) => (
-          <div key={String(d[labelKey])} className="flex h-full flex-1 flex-col justify-end gap-[3px]">
-            {keys
-              .slice()
-              .reverse()
-              .map((k, j) => (
-                <motion.div
-                  key={k.key}
-                  className={`w-full rounded-[4px] ${k.className}`}
-                  initial={{ height: 0 }}
-                  animate={{ height: `${(Number(d[k.key]) / max) * 100}%` }}
-                  transition={{ duration: 0.9, ease: EASE, delay: 0.15 + i * 0.05 + j * 0.03 }}
-                />
-              ))}
-          </div>
-        ))}
-      </div>
-      <div className="mt-2 flex gap-3">
-        {data.map((d) => (
-          <div key={String(d[labelKey])} className="flex-1 text-center text-[12px] text-dim">
-            {String(d[labelKey])}
-          </div>
-        ))}
-      </div>
-      <div className="mt-4 flex flex-wrap gap-4 text-[12.5px] text-muted">
-        {keys.map((k) => (
-          <span key={k.key} className="flex items-center gap-2">
-            <span className={`size-2 rounded-sm ${k.className}`} />
-            {k.label}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/** Smooth area chart for a single series. */
 export function AreaLine({ values, labels }: { values: number[]; labels: string[] }) {
   const W = 600;
   const H = 180;
@@ -313,6 +232,7 @@ export function AreaLine({ values, labels }: { values: number[]; labels: string[
 export function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
     <button
+      type="button"
       onClick={() => onChange(!on)}
       className={`relative h-5 w-9 shrink-0 rounded-full transition-colors duration-300 ${on ? "bg-fg" : "bg-white/[0.12]"}`}
       aria-pressed={on}

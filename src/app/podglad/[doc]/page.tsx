@@ -11,7 +11,6 @@ import { requireAdminUser } from "@/lib/server/session";
 
 export const metadata: Metadata = { title: "Podgląd | FraudGuard", robots: { index: false } };
 
-/** The real page rendered with the CMS draft instead of the published texts. Admins only. */
 async function Preview({ params }: { params: PageProps<"/podglad/[doc]">["params"] }) {
   await requireAdminUser();
   const { doc } = await params;

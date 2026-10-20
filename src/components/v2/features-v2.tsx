@@ -63,7 +63,6 @@ const BASE: Feature[] = [
   },
 ];
 
-/** Plays a demo timeline from 0 when it mounts. */
 function Playing({ Demo }: { Demo: ComponentType<DemoProps> }) {
   const [t, setT] = useState(0);
   useEffect(() => {
@@ -76,14 +75,12 @@ function Playing({ Demo }: { Demo: ComponentType<DemoProps> }) {
 
 export function FeaturesV2() {
   const copy = useContent("home").features;
-  // Texts come from the CMS; each tab keeps its icon and demo by position.
   const FEATURES = BASE.map((b, i) => ({ ...b, ...copy.items[i] }));
   const [active, setActive] = useState(0);
   const box = useRef<HTMLDivElement>(null);
   const seen = useInView(box, { once: true, margin: "-20% 0px" });
   const f = FEATURES[active];
 
-  // The navbar's product menu can open a specific tab.
   useEffect(() => {
     const pick = (i: number) => {
       if (i >= 0 && i < FEATURES.length) setActive(i);
@@ -112,7 +109,6 @@ export function FeaturesV2() {
           </FadeIn>
         </div>
 
-        {/* Switcher: the same pill as the billing toggle. On phones it becomes a 5 column bar, icon above label. */}
         <FadeIn delay={0.1} className="mt-12 flex justify-center md:mt-16">
           <div
             role="tablist"
@@ -149,7 +145,6 @@ export function FeaturesV2() {
           >
             <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
             <div className="grid lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
-              {/* Copy: every text sits in the same grid cell, so the height never jumps */}
               <div className="grid p-6 sm:p-10">
                 {FEATURES.map((x, i) => (
                   <motion.div
@@ -176,7 +171,6 @@ export function FeaturesV2() {
                 ))}
               </div>
 
-              {/* Demo */}
               <div className="relative m-3 mt-0 h-[400px] overflow-hidden rounded-[18px] bg-[#0a0b0d] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)] sm:m-4 sm:mt-0 sm:h-[460px] lg:mt-4 lg:h-[500px]">
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_55%_at_50%_0%,rgba(255,255,255,0.08),transparent_70%)]" />
                 <AnimatePresence mode="wait" initial={false}>

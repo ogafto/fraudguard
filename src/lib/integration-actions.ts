@@ -1,8 +1,5 @@
 "use server";
 
-// Server side of the admin "Integracje" page: save, test and disconnect Resend and Discord.
-// Every action checks the admin role; secrets never travel back to the browser.
-
 import { revalidatePath, updateTag } from "next/cache";
 import { clearIntegration, describeIntegration, getIntegration, hasAppSecret, saveIntegration, type IntegrationName } from "./server/integrations";
 import { sendMail } from "./server/mail";
@@ -30,7 +27,6 @@ export async function loadIntegrations(): Promise<{ state: IntegrationState; sec
 
 const INVITE = /^https:\/\/(?:discord\.gg|(?:www\.)?discord\.com\/invite)\/[A-Za-z0-9-]+\/?$/;
 
-/** The Discord invite used by every Discord button on the site, including the pricing buttons. */
 export async function saveDiscordLinkAction(form: FormData): Promise<ActionResult> {
   await requireAdmin();
   const discordUrl = str(form.get("discordUrl"));
@@ -71,7 +67,6 @@ export async function clearIntegrationAction(name: IntegrationName): Promise<Act
   return { ok: true, message: "Odłączono. Jeśli klucz jest też w zmiennych środowiskowych, będzie używany dalej." };
 }
 
-/** Checks the saved credentials against the real service, without changing anything there. */
 export async function testIntegrationAction(name: IntegrationName): Promise<ActionResult> {
   await requireAdmin();
   try {
@@ -105,7 +100,6 @@ export async function testIntegrationAction(name: IntegrationName): Promise<Acti
   }
 }
 
-/** Sends a short email to the signed in admin, the surest check that verification emails arrive. */
 export async function sendTestMailAction(): Promise<ActionResult> {
   const user = await requireAdmin();
   const { apiKey } = await getIntegration("resend");

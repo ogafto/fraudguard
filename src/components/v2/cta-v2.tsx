@@ -8,7 +8,6 @@ import { LogoMark } from "../logo";
 import { useSite } from "../site-context";
 import { Button, EASE } from "../ui";
 
-/** Compact closing card: one line of copy and two actions. */
 export function CtaV2() {
   const { cta } = useContent("home");
   const { discordUrl } = useSite();

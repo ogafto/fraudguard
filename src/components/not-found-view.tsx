@@ -7,7 +7,6 @@ import { Wordmark } from "./logo";
 import { McItem } from "./mc-ui";
 import { Button, EASE } from "./ui";
 
-// "404" drawn on a 3×5 grid per digit, built out of real block textures.
 const DIGITS: Record<string, string[]> = {
   "4": ["#.#", "#.#", "###", "..#", "..#"],
   "0": ["###", "#.#", "#.#", "#.#", "###"],
@@ -63,7 +62,6 @@ function Block({ cell, i }: { cell: Cell; i: number }) {
           </motion.button>
         )}
       </AnimatePresence>
-      {/* break particles: tiny bits of the same texture flying out */}
       <AnimatePresence>
         {gone &&
           PARTICLES.map(([x, y], k) => (
@@ -90,7 +88,6 @@ export function NotFoundView() {
     transition: { duration: 0.9, ease: EASE, delay },
   });
 
-  // The block sign leans a little towards the cursor.
   const mx = useMotionValue(0);
   const my = useMotionValue(0);
   const rx = useSpring(useTransform(my, [-1, 1], [8, -8]), { stiffness: 120, damping: 18 });
@@ -124,7 +121,6 @@ export function NotFoundView() {
             ))}
           </motion.div>
         </div>
-
 
         <motion.h1 {...fade(0.9)} className="mt-12 text-[clamp(32px,4.4vw,52px)] font-medium leading-[1.05] tracking-[-0.04em]">
           Tej strony nie ma.

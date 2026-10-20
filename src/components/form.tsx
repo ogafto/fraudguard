@@ -28,9 +28,7 @@ export function Field({
   autoComplete?: string;
   value?: string;
   onChange?: (v: string) => void;
-  /** Element shown at the right edge inside the input. */
   right?: ReactNode;
-  /** Element shown at the left edge inside the input. */
   adornment?: ReactNode;
   minLength?: number;
 }) {
@@ -56,7 +54,6 @@ export function Field({
   );
 }
 
-/** Rough strength score 0 to 4 for the meter under the password field. */
 function strength(p: string) {
   let s = 0;
   if (p.length >= 8) s++;
@@ -139,7 +136,6 @@ export function PasswordField({
   );
 }
 
-/** Six boxes for the email code: typing moves forward, backspace moves back, pasting fills all. */
 export function OtpInput({ value, onChange, error, disabled }: { value: string; onChange: (v: string) => void; error?: boolean; disabled?: boolean }) {
   const refs = useRef<(HTMLInputElement | null)[]>([]);
   const digits = Array.from({ length: 6 }, (_, i) => value[i] ?? "");

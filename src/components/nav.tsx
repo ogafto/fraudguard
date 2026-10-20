@@ -5,7 +5,10 @@ import { useLenis } from "lenis/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useRef, useState, type ReactNode } from "react";
+import { logout } from "@/lib/auth";
+import { AccountMenu, useAccount } from "./account-menu";
 import { IconChart, IconDiscord } from "./icons";
+import { McHead } from "./mc-head";
 import { LogoMark } from "./logo";
 import { McItem } from "./mc-ui";
 
@@ -15,7 +18,6 @@ export const NAV_LINKS = [
   { label: "FAQ", href: "#faq" },
 ];
 
-// Same order as the tabs in the features section: picking one opens that tab.
 const PRODUCT: { title: string; desc: string; icon: ReactNode }[] = [
   { title: "Alerty w grze", desc: "Flagi na czacie w czasie rzeczywistym", icon: <McItem name="sword" className="size-[18px]" /> },
   { title: "Komendy", desc: "Profil gracza i ban pod /fg", icon: <McItem name="command" className="size-[18px]" /> },
@@ -24,7 +26,6 @@ const PRODUCT: { title: string; desc: string; icon: ReactNode }[] = [
   { title: "Konfiguracja", desc: "Czułość checków bez restartu", icon: <McItem name="comparator" className="size-[18px]" /> },
 ];
 
-/** Event the features section listens to, so the menu can open a specific tab. */
 export const FEATURE_EVENT = "fg:feature";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
@@ -42,7 +43,6 @@ export function useScrollTo() {
 
 function MegaMenu({ onPick, onEnter }: { onPick: (href: string, tab?: number) => void; onEnter: () => void }) {
   return (
-    // pt-3 instead of a margin: the padding is part of the menu, so the pointer never "leaves" on the way down.
     <div className="absolute left-1/2 top-full z-10 w-[660px] -translate-x-1/2 pt-3" onMouseEnter={onEnter}>
     <motion.div
       initial={{ opacity: 0, y: -10, scale: 0.97, filter: "blur(8px)" }}
@@ -124,7 +124,7 @@ export function Nav() {
   const [open, setOpen] = useState(false);
   const scrollTo = useScrollTo();
   const router = useRouter();
-  // Small delay before closing, so a pointer that slips off for a moment does not shut the menu.
+  const account = useAccount();
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const keepMenu = () => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
@@ -155,7 +155,6 @@ export function Nav() {
     setMenu(false);
     if (href.startsWith("/")) return router.push(href);
     if (tab !== undefined) {
-      // Live event for this page, and a note for the home page in case we navigate there first.
       window.dispatchEvent(new CustomEvent(FEATURE_EVENT, { detail: tab }));
       try {
         sessionStorage.setItem(FEATURE_EVENT, String(tab));
@@ -233,18 +232,26 @@ export function Nav() {
           </ul>
 
           <div className="flex items-center gap-1.5" onMouseEnter={() => openMenu(false)}>
-            <Link href="/logowanie" className="hidden rounded-full px-3.5 py-2 text-[14px] text-muted transition-colors hover:text-fg sm:block">
-              Zaloguj się
-            </Link>
-            <Link
-              href="/rejestracja"
-              className="group hidden h-9 items-center gap-1.5 overflow-hidden rounded-full bg-fg px-4 text-[13.5px] font-medium text-bg transition-colors hover:bg-[#e4e5e7] sm:inline-flex"
-            >
-              <span className="relative inline-flex h-[1.25em] flex-col overflow-hidden leading-[1.25em]">
-                <span className="transition-transform duration-500 ease-out-expo group-hover:-translate-y-full">Załóż konto</span>
-                <span className="absolute top-full transition-transform duration-500 ease-out-expo group-hover:-translate-y-full">Załóż konto</span>
-              </span>
-            </Link>
+            {account === undefined ? (
+              <span className="hidden h-9 w-40 sm:block" />
+            ) : account ? (
+              <AccountMenu account={account} />
+            ) : (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="flex items-center gap-1.5">
+                <Link href="/logowanie" className="hidden rounded-full px-3.5 py-2 text-[14px] text-muted transition-colors hover:text-fg sm:block">
+                  Zaloguj się
+                </Link>
+                <Link
+                  href="/rejestracja"
+                  className="group hidden h-9 items-center gap-1.5 overflow-hidden rounded-full bg-fg px-4 text-[13.5px] font-medium text-bg transition-colors hover:bg-[#e4e5e7] sm:inline-flex"
+                >
+                  <span className="relative inline-flex h-[1.25em] flex-col overflow-hidden leading-[1.25em]">
+                    <span className="transition-transform duration-500 ease-out-expo group-hover:-translate-y-full">Załóż konto</span>
+                    <span className="absolute top-full transition-transform duration-500 ease-out-expo group-hover:-translate-y-full">Załóż konto</span>
+                  </span>
+                </Link>
+              </motion.div>
+            )}
             <button
               onClick={() => setOpen((o) => !o)}
               className="relative flex size-10 items-center justify-center rounded-full transition-colors hover:bg-white/[0.06] md:hidden"
@@ -259,7 +266,6 @@ export function Nav() {
 
         <AnimatePresence>{menu && <MegaMenu onPick={go} onEnter={keepMenu} />}</AnimatePresence>
 
-        {/* Mobile sheet grows out of the pill */}
         <AnimatePresence>
           {open && (
             <motion.div
@@ -295,14 +301,36 @@ export function Nav() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
-                className="grid grid-cols-2 gap-2 border-t border-line p-3"
+                className="border-t border-line p-3"
               >
-                <Link href="/logowanie" onClick={() => setOpen(false)} className="flex h-11 items-center justify-center rounded-full bg-white/[0.06] text-[14px]">
-                  Zaloguj się
-                </Link>
-                <Link href="/rejestracja" onClick={() => setOpen(false)} className="flex h-11 items-center justify-center rounded-full bg-fg text-[14px] font-medium text-bg">
-                  Załóż konto
-                </Link>
+                {account ? (
+                  <>
+                    <div className="flex items-center gap-3 px-1 pb-3">
+                      <McHead name={account.nick} className="size-10 rounded-lg" />
+                      <div className="min-w-0">
+                        <div className="truncate text-[15px] font-medium">{account.nick}</div>
+                        <div className="text-[12.5px] text-dim">{account.role === "admin" ? "Administrator" : "Klient"}</div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Link href={account.role === "admin" ? "/admin" : "/panel"} onClick={() => setOpen(false)} className="flex h-11 items-center justify-center rounded-full bg-fg text-[14px] font-medium text-bg">
+                        {account.role === "admin" ? "Panel admina" : "Mój panel"}
+                      </Link>
+                      <form action={logout}>
+                        <button className="flex h-11 w-full items-center justify-center rounded-full bg-white/[0.06] text-[14px]">Wyloguj się</button>
+                      </form>
+                    </div>
+                  </>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Link href="/logowanie" onClick={() => setOpen(false)} className="flex h-11 items-center justify-center rounded-full bg-white/[0.06] text-[14px]">
+                      Zaloguj się
+                    </Link>
+                    <Link href="/rejestracja" onClick={() => setOpen(false)} className="flex h-11 items-center justify-center rounded-full bg-fg text-[14px] font-medium text-bg">
+                      Załóż konto
+                    </Link>
+                  </div>
+                )}
               </motion.div>
             </motion.div>
           )}

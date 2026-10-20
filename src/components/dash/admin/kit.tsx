@@ -1,7 +1,5 @@
 "use client";
 
-// Small building blocks shared by the admin screens that write data (purchases, licences, CMS).
-
 import { AnimatePresence, motion } from "motion/react";
 import type { ReactNode } from "react";
 import { EASE } from "../../ui";
@@ -18,7 +16,6 @@ export const BILLING_LABEL = { monthly: "miesięcznie", lifetime: "dożywotnio" 
 
 export type Notice = { ok: boolean; message: string } | null;
 
-/** Green or red message that slides in under a form. */
 export function NoticeBar({ notice, className = "mt-4" }: { notice: Notice; className?: string }) {
   return (
     <AnimatePresence initial={false}>
@@ -89,7 +86,6 @@ export function Btn({
   );
 }
 
-/** Small text button used inside table rows. */
 export function RowAction({ children, onClick, disabled }: { children: ReactNode; onClick: () => void; disabled?: boolean }) {
   return (
     <button onClick={onClick} disabled={disabled} className="text-[13px] text-muted transition-colors hover:text-fg disabled:opacity-40">
@@ -157,7 +153,6 @@ export function Modal({ open, onClose, title, children }: { open: boolean; onClo
   );
 }
 
-/** Licence key with a copy button. */
 export function KeyBox({ value }: { value: string }) {
   return (
     <button

@@ -28,7 +28,6 @@ export function Hero() {
 
   return (
     <section id="top" className="relative isolate overflow-hidden pt-36 sm:pt-44">
-      {/* Backdrop: top light + faint grid */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute left-1/2 top-0 h-[720px] w-[1400px] -translate-x-1/2 bg-[radial-gradient(ellipse_50%_50%_at_50%_0%,rgba(255,255,255,0.11),transparent_70%)]" />
         <div className="absolute inset-0 [background-image:linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:80px_80px] [mask-image:radial-gradient(ellipse_60%_45%_at_50%_0%,#000,transparent)]" />
@@ -82,7 +81,6 @@ export function Hero() {
         </motion.div>
       </motion.div>
 
-      {/* Product shot */}
       <motion.div
         ref={stage}
         {...fadeUp(0.9)}
@@ -94,7 +92,6 @@ export function Hero() {
         />
         <motion.div style={{ rotateX, scale, transformOrigin: "50% 0%" }} className="relative">
           <div className="relative rounded-[18px] bg-white/[0.03] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_0_0_1px_rgba(255,255,255,0.09),0_50px_120px_-30px_rgba(0,0,0,0.9)]">
-            {/* light sweeping along the top edge */}
             <div className="pointer-events-none absolute inset-x-8 top-0 h-px overflow-hidden">
               <div className="h-px w-1/3 animate-beam bg-gradient-to-r from-transparent via-white to-transparent" />
             </div>

@@ -1,7 +1,5 @@
 "use client";
 
-// Form controls the CMS builds from a document's field schema (see src/lib/content.ts).
-
 import { AnimatePresence, motion } from "motion/react";
 import { useState, type ReactNode } from "react";
 import type { Field } from "@/lib/content";
@@ -28,7 +26,6 @@ function FieldLabel({ label, hint, children, aside }: { label: string; hint?: st
   );
 }
 
-/** Grows with its content, so long paragraphs stay readable. */
 function AutoTextArea({ value, onChange, max, placeholder }: { value: string; onChange: (v: string) => void; max?: number; placeholder?: string }) {
   const rows = Math.min(14, Math.max(2, Math.ceil(value.length / 70) + value.split("\n").length - 1));
   return <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={rows} maxLength={max} placeholder={placeholder} className={`resize-y py-2 leading-relaxed ${CONTROL}`} />;
@@ -36,10 +33,6 @@ function AutoTextArea({ value, onChange, max, placeholder }: { value: string; on
 
 const Counter = ({ value, max }: { value: string; max?: number }) =>
   max && value.length > max * 0.8 ? <span className={`text-[11.5px] tabular-nums ${value.length >= max ? "text-danger" : "text-dim"}`}>{value.length}/{max}</span> : null;
-
-/* ------------------------------------------------------------------ */
-/* Item toolbar (move, duplicate, remove)                              */
-/* ------------------------------------------------------------------ */
 
 function IconBtn({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: ReactNode }) {
   return (
@@ -118,12 +111,7 @@ const move = <T,>(arr: T[], from: number, to: number) => {
   return next;
 };
 
-/* ------------------------------------------------------------------ */
-/* Lists of plain strings                                              */
-/* ------------------------------------------------------------------ */
-
 function StringList({ items, onChange, item, max, multiline }: { items: string[]; onChange: (v: string[]) => void; item: string; max?: number; multiline?: boolean }) {
-  // Keys stay stable while typing and moving.
   const [keys, setKeys] = useState(() => items.map(() => crypto.randomUUID()));
   const k = keys.length === items.length ? keys : items.map((_, i) => keys[i] ?? crypto.randomUUID());
   const set = (next: string[], nextKeys: string[]) => {
@@ -171,10 +159,6 @@ function StringList({ items, onChange, item, max, multiline }: { items: string[]
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/* Legal body: paragraphs and bullet lists                             */
-/* ------------------------------------------------------------------ */
 
 function Blocks({ blocks, onChange }: { blocks: (string | string[])[]; onChange: (v: (string | string[])[]) => void }) {
   const [keys, setKeys] = useState(() => blocks.map(() => crypto.randomUUID()));
@@ -233,10 +217,6 @@ function Blocks({ blocks, onChange }: { blocks: (string | string[])[]; onChange:
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/* Lists of objects (plans, FAQ, sections…)                            */
-/* ------------------------------------------------------------------ */
 
 function emptyFor(fields: Field[]): Obj {
   const o: Obj = {};
@@ -337,10 +317,6 @@ function ObjectList({ field, items, onChange }: { field: Extract<Field, { kind: 
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/* Dispatcher                                                          */
-/* ------------------------------------------------------------------ */
 
 export function FieldControl({ field, value, onChange }: { field: Field; value: Value; onChange: OnChange }) {
   switch (field.kind) {

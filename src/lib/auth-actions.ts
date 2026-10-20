@@ -1,7 +1,5 @@
 "use server";
 
-// Server side of the account screens. Re-exported from ./auth so the screens import from one place.
-
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { AuthResult } from "./auth";
@@ -25,10 +23,6 @@ const fail = (error: string): AuthResult => ({ ok: false, error });
 const MAIL_FAILED = fail("Nie udało się wysłać wiadomości. Spróbuj ponownie za chwilę.");
 const MAIL_OFF = fail("Wysyłka e-maili nie jest jeszcze włączona, więc nie możemy wysłać kodu. Napisz do nas na Discordzie.");
 
-/**
- * Sends the email and returns null, or the error to show. Without Resend connected, addresses from
- * ADMIN_EMAILS get their message in the server log instead, so the first admin can sign in and connect it.
- */
 async function deliver(mail: Parameters<typeof sendMail>[0]): Promise<AuthResult | null> {
   try {
     await sendMail(mail);
@@ -52,7 +46,6 @@ async function findUser(email: string) {
   return user;
 }
 
-/** Base URL for links in emails: APP_URL if set, otherwise the host the request came in on. */
 async function origin() {
   if (process.env.APP_URL) return process.env.APP_URL.replace(/\/$/, "");
   const h = await headers();
@@ -61,7 +54,6 @@ async function origin() {
   return `${proto}://${host}`;
 }
 
-/** True when a code or link for this purpose went out less than RESEND_SECONDS ago. */
 async function tooSoon(userId: string, purpose: Purpose) {
   const rows = await db(`select 1 from email_tokens where user_id = $1 and purpose = $2 and created_at > now() - make_interval(secs => $3)`, [
     userId,
@@ -71,7 +63,6 @@ async function tooSoon(userId: string, purpose: Purpose) {
   return rows.length > 0;
 }
 
-/** Replaces the user's code and link for this purpose and returns the new plain values. */
 async function issue(userId: string, purpose: Purpose, minutes: number) {
   const code = purpose === "verify" ? randomCode() : null;
   const token = randomToken();
@@ -98,10 +89,6 @@ async function markVerified(userId: string) {
   await createSession(userId);
 }
 
-/* ------------------------------------------------------------------ */
-/* Actions                                                             */
-/* ------------------------------------------------------------------ */
-
 export async function register(data: { nick: string; email: string; password: string }): Promise<AuthResult> {
   const nick = str(data?.nick).trim();
   const email = normEmail(data?.email);
@@ -118,7 +105,6 @@ export async function register(data: { nick: string; email: string; password: st
   const passwordHash = await hashPassword(password);
   let user: Pick<UserRow, "id" | "nick" | "email">;
   if (existing) {
-    // Unverified sign up again: take the new details and send a fresh code.
     await db(`update users set nick = $2, password_hash = $3 where id = $1`, [existing.id, nick, passwordHash]);
     user = { id: existing.id, nick, email };
     if (await tooSoon(user.id, "verify")) return { ok: true };
@@ -175,7 +161,6 @@ export async function verifyToken(token: string): Promise<AuthResult> {
 
 export async function resendCode(email: string): Promise<AuthResult> {
   const user = await findUser(normEmail(email));
-  // Same answer whether or not the address has an account.
   if (!user || user.email_verified_at || (await tooSoon(user.id, "verify"))) return { ok: true };
   const failed = await sendVerification(user);
   if (failed) return failed;
@@ -189,7 +174,6 @@ export async function login(email: string, password: string): Promise<AuthResult
   if (!user || !valid) return fail("Nieprawidłowy e-mail lub hasło.");
 
   if (!user.email_verified_at) {
-    // Password is right but the address was never confirmed: send a code and show the code screen.
     if (!(await tooSoon(user.id, "verify"))) {
       const failed = await sendVerification(user);
       if (failed) return failed;
@@ -205,7 +189,6 @@ export async function requestPasswordReset(email: string): Promise<AuthResult> {
   const address = normEmail(email);
   if (!EMAIL.test(address)) return fail("Podaj adres e-mail.");
   const user = await findUser(address);
-  // Same answer whether or not the address has an account.
   if (!user || (await tooSoon(user.id, "reset"))) return { ok: true };
   const { token } = await issue(user.id, "reset", RESET_MINUTES);
   return (await deliver(resetMail(user.email, user.nick, `${await origin()}/nowe-haslo?token=${encodeURIComponent(token)}`))) ?? { ok: true };
@@ -222,7 +205,6 @@ export async function resetPassword(token: string, password: string): Promise<Au
   );
   if (!row) return fail("Link do zmiany hasła jest nieprawidłowy albo wygasł. Poproś o nowy.");
 
-  // The link proves the inbox, so the address counts as confirmed. Old sessions are signed out.
   await db(`update users set password_hash = $2, email_verified_at = coalesce(email_verified_at, now()) where id = $1`, [
     row.user_id,
     await hashPassword(password),

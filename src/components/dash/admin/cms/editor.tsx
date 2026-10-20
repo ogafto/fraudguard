@@ -1,7 +1,5 @@
 "use client";
 
-// One CMS document: edit, save as draft, preview, publish, and go back to an older version.
-
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
@@ -14,7 +12,6 @@ import { FieldControl, Fields } from "./fields";
 
 type Obj = Record<string, unknown>;
 
-/** Where the preview scrolls to for documents that are part of the landing page. */
 const HASH: Partial<Record<ContentKey, string>> = { pricing: "#pricing", faq: "#faq" };
 
 export type EditorProps<K extends ContentKey> = {
@@ -26,7 +23,6 @@ export type EditorProps<K extends ContentKey> = {
   updatedBy: string | null;
 };
 
-/** Top level fields become cards: groups and lists get their own, loose texts share one. */
 function sections(fields: Field[]) {
   const loose = fields.filter((f) => f.kind !== "group" && f.kind !== "list");
   const own = fields.filter((f) => f.kind === "group" || f.kind === "list");
@@ -114,7 +110,6 @@ export function ContentEditor<K extends ContentKey>({ docKey, initial, hasDraft:
     setNotice(null);
   };
 
-  /** Replaces the whole form (after a restore or discard) so list item keys start fresh. */
   const replace = (next: ContentMap[K]) => {
     setData(next);
     setRevision((r) => r + 1);
@@ -140,7 +135,6 @@ export function ContentEditor<K extends ContentKey>({ docKey, initial, hasDraft:
   };
 
   const preview = async () => {
-    // Open the tab right away (pop-up blockers), then point it at the saved draft.
     const tab = window.open("about:blank", "_blank");
     setBusy("preview");
     const ok = dirty ? await save(true) : true;
@@ -183,7 +177,6 @@ export function ContentEditor<K extends ContentKey>({ docKey, initial, hasDraft:
     }
   };
 
-  // Cmd/Ctrl+S saves the draft; leaving with unsaved changes asks first.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
@@ -220,7 +213,6 @@ export function ContentEditor<K extends ContentKey>({ docKey, initial, hasDraft:
         <p className="mt-1 text-[14.5px] text-muted">{doc.desc}</p>
       </motion.div>
 
-      {/* Toolbar sticks under the top bar */}
       <div className="sticky top-14 z-10 -mx-4 mb-5 border-b border-line bg-bg/80 px-4 py-3 backdrop-blur-xl sm:-mx-8 sm:px-8 lg:top-14">
         <div className="flex flex-wrap items-center gap-2">
           <span className="mr-auto flex items-center gap-2 text-[13px] text-muted">
@@ -260,7 +252,6 @@ export function ContentEditor<K extends ContentKey>({ docKey, initial, hasDraft:
       </div>
 
       <div key={revision} className="grid gap-4 lg:grid-cols-[200px_minmax(0,1fr)]">
-        {/* Section index */}
         <nav className="hidden lg:block">
           <ul className="sticky top-[136px] space-y-0.5">
             {parts.map((p) => (

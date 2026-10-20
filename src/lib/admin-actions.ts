@@ -1,12 +1,10 @@
 "use server";
 
-// Server side of the admin panel: purchases, licences, accounts and the CMS.
-// Every action checks the admin role itself; the page guard alone is not enough.
-
 import { refresh } from "next/cache";
 import { CONTENT_KEYS, type ContentKey, type ContentMap } from "./content";
 import { extendLicense, findUserByEmail, createLicense, recordPurchase, setLicenseStatus, setPurchaseStatus } from "./server/admin-data";
 import { discardDraft, getEditorState, getPublishedContent, listVersions, publish, restoreVersion, saveDraft } from "./server/content";
+import { addRelease, deleteRelease } from "./server/account";
 import { db } from "./server/db";
 import { getCurrentUser } from "./server/session";
 
@@ -24,10 +22,6 @@ async function findPlan(planId: string) {
   const pricing = await getPublishedContent("pricing");
   return pricing.plans.find((p) => p.id === planId);
 }
-
-/* ------------------------------------------------------------------ */
-/* Purchases and licences                                              */
-/* ------------------------------------------------------------------ */
 
 export async function addPurchaseAction(input: { email: string; planId: string; billing: string; amount: string; note: string }): Promise<AdminResult> {
   const admin = await requireAdmin();
@@ -78,6 +72,36 @@ export async function createLicenseAction(input: { email: string; planId: string
   return { ok: true, message: "Licencja utworzona.", licenseKey: key };
 }
 
+export async function grantPackageAction(input: { userId: string; planId: string; billing: string }): Promise<AdminResult> {
+  await requireAdmin();
+  const [user] = await db<{ id: string; nick: string }>(`select id, nick from users where id = $1`, [String(input.userId ?? "")]);
+  if (!user) return { ok: false, message: "Nie znaleziono konta." };
+  const plan = await findPlan(String(input.planId ?? ""));
+  if (!plan) return { ok: false, message: "Wybierz pakiet." };
+  if (!isBilling(input.billing)) return { ok: false, message: "Wybierz okres." };
+  const key = await createLicense(user.id, plan, input.billing, null);
+  refresh();
+  return { ok: true, message: `${user.nick} ma teraz pakiet ${plan.name}. Ustawienia anticheata odblokowały się w jego panelu.`, licenseKey: key };
+}
+
+export async function addReleaseAction(input: { version: string; url: string; notes: string }): Promise<AdminResult> {
+  await requireAdmin();
+  const version = String(input.version ?? "").trim();
+  const url = String(input.url ?? "").trim();
+  if (!/^[0-9A-Za-z.\-+]{1,32}$/.test(version)) return { ok: false, message: "Podaj numer wersji, np. 2.1.0." };
+  if (!/^https:\/\/\S+$/.test(url)) return { ok: false, message: "Podaj link do pliku zaczynający się od https://." };
+  await addRelease({ version, url, notes: String(input.notes ?? "").slice(0, 4000) });
+  refresh();
+  return { ok: true, message: `Wydanie ${version} jest dostępne do pobrania w panelu klientów z pakietem.` };
+}
+
+export async function deleteReleaseAction(id: string): Promise<AdminResult> {
+  await requireAdmin();
+  await deleteRelease(String(id));
+  refresh();
+  return { ok: true, message: "Wydanie usunięte." };
+}
+
 export async function setLicenseStatusAction(id: string, status: string): Promise<AdminResult> {
   await requireAdmin();
   if (status !== "active" && status !== "suspended") return { ok: false, message: "Nieznany status." };
@@ -93,10 +117,6 @@ export async function extendLicenseAction(id: string): Promise<AdminResult> {
   return { ok: true, message: "Licencja przedłużona o 30 dni." };
 }
 
-/* ------------------------------------------------------------------ */
-/* Accounts                                                            */
-/* ------------------------------------------------------------------ */
-
 export async function setUserRoleAction(userId: string, role: string): Promise<AdminResult> {
   const admin = await requireAdmin();
   if (role !== "admin" && role !== "client") return { ok: false, message: "Nieznana rola." };
@@ -105,10 +125,6 @@ export async function setUserRoleAction(userId: string, role: string): Promise<A
   refresh();
   return { ok: true, message: role === "admin" ? "Nadano uprawnienia administratora." : "Odebrano uprawnienia administratora." };
 }
-
-/* ------------------------------------------------------------------ */
-/* CMS                                                                 */
-/* ------------------------------------------------------------------ */
 
 const isKey = (k: unknown): k is ContentKey => CONTENT_KEYS.includes(k as ContentKey);
 

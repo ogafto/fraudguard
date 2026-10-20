@@ -7,7 +7,6 @@ import { CtaV2 } from "./v2/cta-v2";
 import { FeaturesV2 } from "./v2/features-v2";
 import { PricingV2 } from "./v2/pricing-v2";
 
-/** The landing page, shared by "/" and the CMS preview. */
 export function HomePage() {
   return (
     <>

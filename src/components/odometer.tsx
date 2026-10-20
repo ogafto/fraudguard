@@ -2,8 +2,6 @@
 
 import { AnimatePresence, motion } from "motion/react";
 
-/* Odometer: each digit rolls to its new value */
-
 function Digit({ d }: { d: number }) {
   return (
     <span className="relative inline-block h-[1em] w-[0.6em] overflow-hidden">

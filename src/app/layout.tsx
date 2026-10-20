@@ -13,7 +13,6 @@ const geistMono = Geist_Mono({
   subsets: ["latin", "latin-ext"],
 });
 
-// Used only inside the in-game (Minecraft) mockups.
 const pixel = Pixelify_Sans({
   variable: "--font-pixelify",
   subsets: ["latin", "latin-ext"],

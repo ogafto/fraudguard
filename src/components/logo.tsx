@@ -1,6 +1,5 @@
 import { useId } from "react";
 
-/** The three shards of the FraudGuard "G" (240×240 viewBox). */
 export const LOGO_SHARDS = {
   bar: "M84.66,50.83L178.06,50.83L198.17,16L24.33,16Z",
   blade: "M135.2,154.34L80.05,58.81L19.72,23.98L135.2,224Z",

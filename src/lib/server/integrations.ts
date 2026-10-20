@@ -2,17 +2,12 @@ import "server-only";
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 import { db } from "./db";
 
-// Integrations (Resend, Discord) are connected from the admin settings page and stored in the settings table,
-// encrypted with AES-256-GCM using a key derived from APP_SECRET. Environment variables still
-// work as a fallback, so a deploy can also be configured without the UI.
-
 export type Integrations = {
   resend: { apiKey: string; from: string };
   discord: { webhookUrl: string };
 };
 export type IntegrationName = keyof Integrations;
 
-/** Fields that hold secrets: never sent back to the browser, only a masked hint. */
 export const SECRET_FIELDS: Record<IntegrationName, string[]> = {
   resend: ["apiKey"],
   discord: ["webhookUrl"],
@@ -62,7 +57,6 @@ async function stored<K extends IntegrationName>(name: K): Promise<Partial<Integ
   return decrypt<Partial<Integrations[K]>>(row.value) ?? {};
 }
 
-/** Saved values first, then environment variables. Empty strings when neither is set. */
 export async function getIntegration<K extends IntegrationName>(name: K): Promise<Integrations[K]> {
   const saved = (await stored(name)) as Record<string, string | undefined>;
   const env = ENV[name] as Record<string, string>;
@@ -71,7 +65,6 @@ export async function getIntegration<K extends IntegrationName>(name: K): Promis
   return out as Integrations[K];
 }
 
-/** Where each value comes from, for the settings page. Secrets are masked. */
 export async function describeIntegration(name: IntegrationName) {
   const saved = (await stored(name)) as Record<string, string | undefined>;
   const env = ENV[name] as Record<string, string>;
@@ -90,7 +83,6 @@ export async function describeIntegration(name: IntegrationName) {
 
 const mask = (v: string) => (!v ? "" : v.length <= 10 ? "••••••" : `${v.slice(0, 6)}••••${v.slice(-4)}`);
 
-/** Saves the fields; an empty secret field keeps the value saved before. */
 export async function saveIntegration<K extends IntegrationName>(name: K, values: Partial<Integrations[K]>) {
   const current = (await stored(name)) as Record<string, string | undefined>;
   const next: Record<string, string> = {};

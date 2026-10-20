@@ -1,10 +1,6 @@
 import type { ReactNode } from "react";
 import { McHead } from "./mc-head";
 
-/* ------------------------------------------------------------------ */
-/* Chat text with Minecraft § formatting codes                         */
-/* ------------------------------------------------------------------ */
-
 const MC_COLORS: Record<string, string> = {
   "0": "#000000",
   "1": "#0000AA",
@@ -24,13 +20,11 @@ const MC_COLORS: Record<string, string> = {
   f: "#FFFFFF",
 };
 
-// Minecraft draws text shadow in the same colour at a quarter of the brightness.
 const shade = (hex: string) => {
   const n = parseInt(hex.slice(1), 16);
   return `rgb(${(n >> 16) >> 2},${((n >> 8) & 255) >> 2},${(n & 255) >> 2})`;
 };
 
-/** Renders a string like "§8[§fFG§8] §cPlayer" with Minecraft colours and text shadow. */
 export function McText({ children, className }: { children: string; className?: string }) {
   const parts: ReactNode[] = [];
   let color = MC_COLORS.f;
@@ -72,10 +66,6 @@ export function McText({ children, className }: { children: string; className?: 
   return <span className={`font-pixel ${className ?? ""}`}>{parts}</span>;
 }
 
-/* ------------------------------------------------------------------ */
-/* Real Minecraft textures (public/mc)                                 */
-/* ------------------------------------------------------------------ */
-
 const TEXTURES = {
   sword: "/mc/item/diamond_sword.png",
   ironSword: "/mc/item/iron_sword.png",
@@ -108,11 +98,9 @@ const TEXTURES = {
 
 export type SpriteName = keyof typeof TEXTURES | "head";
 
-/** A real item texture, scaled with crisp pixels. `head` renders a player's face from their skin. */
 export function McItem({ name, className, head }: { name: SpriteName; className?: string; head?: string }) {
   if (name === "head") return <McHead name={head ?? "aftoxd"} className={className} />;
   return (
-    // eslint-disable-next-line @next/next/no-img-element
     <img src={TEXTURES[name]} alt="" draggable={false} className={`select-none [image-rendering:pixelated] ${className ?? ""}`} />
   );
 }

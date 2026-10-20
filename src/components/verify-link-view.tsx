@@ -7,7 +7,6 @@ import { verifyToken } from "@/lib/auth";
 import { Wordmark } from "./logo";
 import { Button, EASE } from "./ui";
 
-/** Landing page for the link in the verification email: /weryfikacja?token=… */
 export function VerifyLinkView() {
   const [state, setState] = useState<"checking" | "ok" | "error">("checking");
   const [error, setError] = useState("");

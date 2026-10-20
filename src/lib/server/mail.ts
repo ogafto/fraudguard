@@ -1,12 +1,8 @@
 import "server-only";
 import { getIntegration } from "./integrations";
 
-// Emails go out through Resend (https://resend.com), connected in the admin panel under Integracje
-// (or RESEND_API_KEY). Without a key, `next dev` prints the message to the server console.
-
 type Mail = { to: string; subject: string; html: string; text: string };
 
-/** Thrown when no Resend key is connected (admin panel → Integracje, or RESEND_API_KEY). */
 export class MailNotConfiguredError extends Error {
   constructor() {
     super("Resend is not connected.");
@@ -14,10 +10,8 @@ export class MailNotConfiguredError extends Error {
 }
 
 export async function sendMail(mail: Mail) {
-  // The key and sender come from the admin panel first, then from the environment.
   const { apiKey: key, from } = await getIntegration("resend");
   if (!key) {
-    // Only `next dev` prints to the console; a running site reports the missing integration instead.
     if (process.env.NODE_ENV !== "development") throw new MailNotConfiguredError();
     console.info(`\n[mail] Do: ${mail.to}\n[mail] Temat: ${mail.subject}\n${mail.text}\n`);
     return;
@@ -35,10 +29,6 @@ export async function sendMail(mail: Mail) {
   });
   if (!res.ok) throw new Error(`Resend ${res.status}: ${await res.text()}`);
 }
-
-/* ------------------------------------------------------------------ */
-/* Templates                                                           */
-/* ------------------------------------------------------------------ */
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 

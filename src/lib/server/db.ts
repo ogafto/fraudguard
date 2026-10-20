@@ -1,9 +1,5 @@
 import "server-only";
 
-// One tiny query function for the whole app. With DATABASE_URL set (Vercel + Neon) it talks to
-// Postgres over Neon's HTTP driver. Without it, local development runs an embedded Postgres
-// (PGlite) that keeps its data in .data/pglite, so nothing has to be installed.
-
 type Row = Record<string, unknown>;
 export type Query = <T extends Row = Row>(text: string, params?: unknown[]) => Promise<T[]>;
 
@@ -17,7 +13,6 @@ const SCHEMA = [
     email_verified_at timestamptz,
     created_at timestamptz not null default now()
   )`,
-  // One live code/link per user and purpose ("verify" or "reset"); issuing a new one replaces the old.
   `create table if not exists email_tokens (
     user_id text not null references users(id) on delete cascade,
     purpose text not null,
@@ -35,13 +30,11 @@ const SCHEMA = [
     created_at timestamptz not null default now()
   )`,
   `create index if not exists sessions_user_id on sessions (user_id)`,
-  // Integration settings (Resend, Discord) encrypted with APP_SECRET, plus public site settings.
   `create table if not exists settings (
     key text primary key,
     value text not null,
     updated_at timestamptz not null default now()
   )`,
-  // Purchases are paid on Discord and entered by an admin. Amounts in grosze.
   `create table if not exists purchases (
     id text primary key,
     user_id text not null references users(id) on delete cascade,
@@ -69,7 +62,6 @@ const SCHEMA = [
     created_at timestamptz not null default now()
   )`,
   `create index if not exists licenses_user_id on licenses (user_id)`,
-  // CMS documents: what the site shows (published) and the work in progress (draft).
   `create table if not exists content (
     key text primary key,
     published jsonb,
@@ -86,6 +78,18 @@ const SCHEMA = [
     created_at timestamptz not null default now()
   )`,
   `create index if not exists content_versions_key on content_versions (key, created_at desc)`,
+  `create table if not exists anticheat_settings (
+    user_id text primary key references users(id) on delete cascade,
+    data jsonb not null,
+    updated_at timestamptz not null default now()
+  )`,
+  `create table if not exists releases (
+    id text primary key,
+    version text not null,
+    notes text not null default '',
+    url text not null,
+    created_at timestamptz not null default now()
+  )`,
 ];
 
 async function connect(): Promise<Query> {
@@ -100,7 +104,6 @@ async function connect(): Promise<Query> {
     if (process.env.VERCEL) throw new Error("DATABASE_URL is not set. Connect a Postgres database (e.g. Neon) in the Vercel project.");
     const { PGlite } = await import("@electric-sql/pglite");
     const { mkdir } = await import("node:fs/promises");
-    // PGLITE_DIR lets a second local server use its own copy (one process per folder).
     const dir = process.env.PGLITE_DIR || ".data/pglite";
     await mkdir(dir.split("/").slice(0, -1).join("/") || ".", { recursive: true });
     const pg = new PGlite(dir);
@@ -111,7 +114,6 @@ async function connect(): Promise<Query> {
   return query;
 }
 
-// Kept on globalThis so dev hot reloads reuse one connection (PGlite allows a single instance per folder).
 const store = globalThis as unknown as { __fgDb?: Promise<Query> };
 
 export const db: Query = async (text, params) => {

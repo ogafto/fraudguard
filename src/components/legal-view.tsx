@@ -11,7 +11,6 @@ import { Nav } from "./nav";
 import { useSite } from "./site-context";
 import { EASE, Eyebrow, FadeIn, SplitReveal } from "./ui";
 
-/** Section of the current document that is under the top third of the screen. */
 function useActiveSection(doc: LegalDoc) {
   const [active, setActive] = useState(doc.sections[0].id);
   useEffect(() => {
@@ -98,7 +97,6 @@ function Body({ doc }: { doc: LegalDoc }) {
 
 export function LegalView({ initial }: { initial: LegalDoc["key"] }) {
   const [key, setKey] = useState(initial);
-  // Texts come from the CMS; the key, label and address stay fixed.
   const terms = useContent("terms");
   const privacy = useContent("privacy");
   const LEGAL_DOCS: LegalDoc[] = [
@@ -116,7 +114,6 @@ export function LegalView({ initial }: { initial: LegalDoc["key"] }) {
   const pick = (d: LegalDoc) => {
     if (d.key === key) return;
     setKey(d.key);
-    // Keep the address in sync without a page load, so the link can be shared.
     window.history.replaceState(null, "", d.href);
     if (window.scrollY > 300) lenis?.scrollTo(0, { duration: 1 });
   };

@@ -3,10 +3,6 @@
 import { motion, useScroll, useSpring, useTransform } from "motion/react";
 import { useRef, type ReactNode } from "react";
 
-/**
- * The same product frame as the hero shot: silver glow above, a light beam
- * travelling along the top edge, and a tilt that flattens as it scrolls in.
- */
 export function AppFrame({
   children,
   title,
@@ -62,7 +58,6 @@ export function LivePill({ children = "Na żywo" }: { children?: ReactNode }) {
   );
 }
 
-/** Small card used inside frames — same surface as the hero panel cards. */
 export function PanelCard({ title, children, className }: { title?: string; children: ReactNode; className?: string }) {
   return (
     <div className={`rounded-xl bg-white/[0.02] p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.06)] ${className ?? ""}`}>

@@ -1,15 +1,7 @@
-// Everything the CMS can edit: the shape of each document, the texts the site started with, and the
-// form the admin panel builds for it. Shared by the server (validation, storage) and the browser (editor).
-
 import { PRIVACY, TERMS, type LegalDoc } from "./legal";
-
-/* ------------------------------------------------------------------ */
-/* Shapes                                                              */
-/* ------------------------------------------------------------------ */
 
 export type HomeContent = {
   hero: { badgeTag: string; badgeShort: string; badgeLong: string; title1: string; title2: string; lead: string; primaryCta: string; secondaryCta: string };
-  /** A value like "~0,2 ms" or "30 s" counts up from zero; anything without a number is shown as is. */
   stats: { value: string; label: string }[];
   features: { eyebrow: string; title1: string; title2: string; intro: string; items: { tab: string; title: string; body: string; points: string[] }[] };
   cta: { title: string; lead: string; button: string };
@@ -34,16 +26,11 @@ export type PricingContent = {
 
 export type FaqContent = { eyebrow: string; title1: string; title2: string; intro: string; items: { q: string; a: string }[] };
 
-/** Legal documents as stored: a paragraph is a string, a bullet list is an array of strings. */
 export type LegalContent = Pick<LegalDoc, "title" | "lead" | "updated" | "sections">;
 
 export type ContentMap = { home: HomeContent; pricing: PricingContent; faq: FaqContent; terms: LegalContent; privacy: LegalContent };
 export type ContentKey = keyof ContentMap;
 export const CONTENT_KEYS: ContentKey[] = ["home", "pricing", "faq", "terms", "privacy"];
-
-/* ------------------------------------------------------------------ */
-/* Starting texts (what the site shipped with)                         */
-/* ------------------------------------------------------------------ */
 
 const legal = (d: LegalDoc): LegalContent => ({ title: d.title, lead: d.lead, updated: d.updated, sections: d.sections });
 
@@ -174,10 +161,6 @@ export const DEFAULT_CONTENT: ContentMap = {
   privacy: legal(PRIVACY),
 };
 
-/* ------------------------------------------------------------------ */
-/* Editor schema                                                       */
-/* ------------------------------------------------------------------ */
-
 export type Field =
   | { kind: "text"; key: string; label: string; hint?: string; max?: number }
   | { kind: "textarea"; key: string; label: string; hint?: string; max?: number }
@@ -185,9 +168,7 @@ export type Field =
   | { kind: "toggle"; key: string; label: string; hint?: string }
   | { kind: "strings"; key: string; label: string; item: string; max?: number }
   | { kind: "group"; key: string; label: string; fields: Field[] }
-  /** `title` names an item in the list by one of its text fields. `fixed` lists can be edited and reordered only. */
   | { kind: "list"; key: string; label: string; item: string; title: string; fields: Field[]; fixed?: boolean; max?: number }
-  /** Legal body: paragraphs and bullet lists in any order. */
   | { kind: "blocks"; key: string; label: string };
 
 const t = (key: string, label: string, hint?: string, max = 300): Field => ({ kind: "text", key, label, hint, max });
@@ -313,10 +294,6 @@ export const CONTENT_DOCS: Record<ContentKey, { label: string; desc: string; hre
   privacy: { label: "Polityka prywatności", desc: "Cała polityka: sekcje, akapity, listy i data aktualizacji.", href: "/prywatnosc", fields: LEGAL_FIELDS },
 };
 
-/* ------------------------------------------------------------------ */
-/* Validation                                                          */
-/* ------------------------------------------------------------------ */
-
 const str = (v: unknown, max = 4000) => (typeof v === "string" ? v.replace(/\r\n/g, "\n").slice(0, max) : "");
 
 export const slugify = (s: string) =>
@@ -380,11 +357,9 @@ function coerceFields(fields: Field[], input: unknown, fallback: Record<string, 
   return out;
 }
 
-/** Fills gaps with the starting texts, drops unknown fields and fixes ids, so the site always gets a complete document. */
 export function coerceContent<K extends ContentKey>(key: K, input: unknown): ContentMap[K] {
   const doc = coerceFields(CONTENT_DOCS[key].fields, input, DEFAULT_CONTENT[key] as unknown as Record<string, unknown>);
 
-  // The pages need at least one plan and one section to render.
   const def = DEFAULT_CONTENT[key] as unknown as Record<string, unknown>;
   if (key === "pricing" && !(doc.plans as unknown[]).length) doc.plans = def.plans;
   if ((key === "terms" || key === "privacy") && !(doc.sections as unknown[]).length) doc.sections = def.sections;

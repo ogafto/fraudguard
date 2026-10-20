@@ -16,7 +16,6 @@ import { LogoMark } from "./logo";
 import { McHead } from "./mc-head";
 import { EASE } from "./ui";
 
-/** Renders children at a fixed design width and scales them to fit the container. */
 export function Scaled({ width, children, className }: { width: number; children: ReactNode; className?: string }) {
   const outer = useRef<HTMLDivElement>(null);
   const inner = useRef<HTMLDivElement>(null);
@@ -47,10 +46,6 @@ export function Scaled({ width, children, className }: { width: number; children
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/* Data                                                                */
-/* ------------------------------------------------------------------ */
 
 const PLAYERS = [
   "aftoxd", "Notch_Fan99", "BlockBreaker", "q1ckscope", "Dr34mer", "PvP_God_2011",
@@ -90,10 +85,6 @@ const ACTION_STYLE: Record<Action, string> = {
   kick: "text-fg bg-white/[0.08]",
   ban: "text-danger bg-danger/10",
 };
-
-/* ------------------------------------------------------------------ */
-/* Pieces                                                              */
-/* ------------------------------------------------------------------ */
 
 function Spark({ seed, up = true }: { seed: number; up?: boolean }) {
   const pts = Array.from({ length: 16 }, (_, i) => {
@@ -240,17 +231,12 @@ const NAV = [
   { label: "Ustawienia", Icon: IconCog },
 ];
 
-/* ------------------------------------------------------------------ */
-/* Panel                                                               */
-/* ------------------------------------------------------------------ */
-
 export function Panel() {
   const ref = useRef<HTMLDivElement>(null);
   const active = useInView(ref, { margin: "-10% 0px" });
 
   return (
     <div ref={ref} className="flex h-[740px] w-[1240px] overflow-hidden rounded-[14px] bg-[#0b0c0e] text-left">
-      {/* Sidebar */}
       <aside className="flex w-[232px] shrink-0 flex-col border-r border-line bg-[#0a0b0c] p-3">
         <div className="flex items-center gap-2.5 rounded-lg px-2 py-1.5">
           <span className="flex size-6 items-center justify-center rounded-md bg-fg">
@@ -302,7 +288,6 @@ export function Panel() {
         </div>
       </aside>
 
-      {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-12 shrink-0 items-center gap-2 border-b border-line px-5 text-[13px]">
           <span className="text-muted">Survival EU</span>
@@ -365,7 +350,6 @@ export function Panel() {
             </div>
           </div>
 
-          {/* Player detail */}
           <div className="flex flex-col gap-4">
             <div className="rounded-xl bg-white/[0.02] p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.06)]">
               <div className="flex items-center gap-3">

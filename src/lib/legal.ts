@@ -1,6 +1,3 @@
-// Legal copy for /regulamin and /prywatnosc. Items in [square brackets] are the
-// operator's details that still need filling in; have a lawyer review both texts before launch.
-
 export type LegalSection = { id: string; title: string; body: (string | string[])[] };
 export type LegalDoc = { key: "terms" | "privacy"; label: string; href: string; title: string; lead: string; updated: string; sections: LegalSection[] };
 

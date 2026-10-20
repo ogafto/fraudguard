@@ -9,7 +9,6 @@ const R = 8;
 const P = 1;
 const KEYLEN = 64;
 
-/** Stored as scrypt$N$r$p$salt$hash so the parameters can be raised later without breaking old hashes. */
 export async function hashPassword(password: string) {
   const salt = randomBytes(16);
   const key = await scryptAsync(password.normalize("NFKC"), salt, KEYLEN, { N, r: R, p: P });
@@ -24,7 +23,6 @@ export async function verifyPassword(password: string, stored: string) {
   return timingSafeEqual(key, expected);
 }
 
-// A valid hash of a random password, compared against when the email is unknown so both cases take as long.
 let dummy: Promise<string> | undefined;
 export const dummyHash = () => (dummy ??= hashPassword(randomBytes(16).toString("hex")));
 

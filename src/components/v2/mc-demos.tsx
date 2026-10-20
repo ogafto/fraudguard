@@ -7,14 +7,8 @@ import { McHead } from "../mc-head";
 import { McItem, McText, type SpriteName } from "../mc-ui";
 import { EASE } from "../ui";
 
-/* ------------------------------------------------------------------ */
-/* Shared helpers                                                      */
-/* ------------------------------------------------------------------ */
-
-/** Every demo is a pure function of `t`, the milliseconds into its chapter, which the scroll position drives. */
 export type DemoProps = { t: number };
 
-/** Largest half step scale at which a texture of `w`×`h` pixels still fits its container. */
 function useFit(w: number, h: number, max: number) {
   const ref = useRef<HTMLDivElement>(null);
   const [s, setS] = useState(2);
@@ -31,7 +25,6 @@ function useFit(w: number, h: number, max: number) {
   return [ref, s] as const;
 }
 
-/** Scales its content down (never up) so it always fits the box, e.g. on short phones. */
 function FitBox({ children }: { children: ReactNode }) {
   const outer = useRef<HTMLDivElement>(null);
   const inner = useRef<HTMLDivElement>(null);
@@ -57,7 +50,6 @@ function FitBox({ children }: { children: ReactNode }) {
 
 const pixel: CSSProperties = { imageRendering: "pixelated" };
 
-/** Item in a 16×16 slot, with a stack count like in game. */
 function Stack({ item, x, y, s, count }: { item: SpriteName; x: number; y: number; s: number; count?: number }) {
   return (
     <div className="absolute" style={{ left: x * s, top: y * s, width: 16 * s, height: 16 * s }}>
@@ -79,7 +71,6 @@ function Cursor({ className }: { className?: string }) {
   );
 }
 
-/** Vanilla tooltip: near black with the purple gradient border. */
 function Tooltip({ lines, size = 15, className, style }: { lines: string[]; size?: number; className?: string; style?: CSSProperties }) {
   return (
     <div
@@ -102,10 +93,8 @@ function Tooltip({ lines, size = 15, className, style }: { lines: string[]; size
   );
 }
 
-/** The vanilla crosshair, so the chat chapters read as the game screen above the hotbar below. */
 function Crosshair() {
   return (
-    // eslint-disable-next-line @next/next/no-img-element
     <img src="/mc/gui/crosshair.png" alt="" className="pointer-events-none absolute left-1/2 top-[30%] size-[30px] -translate-x-1/2 -translate-y-1/2 opacity-70" style={pixel} />
   );
 }
@@ -113,10 +102,6 @@ function Crosshair() {
 function ChatLine({ children, className }: { children: ReactNode; className?: string }) {
   return <div className={`bg-black/50 px-1.5 py-[3px] text-[12px] leading-[16px] sm:text-[14px] sm:leading-[18px] lg:text-[16px] lg:leading-[20px] ${className ?? ""}`}>{children}</div>;
 }
-
-/* ------------------------------------------------------------------ */
-/* Player hotbar, shown in the inventory of the /fg gui menu           */
-/* ------------------------------------------------------------------ */
 
 const HOTBAR: { item: SpriteName; count?: number }[] = [
   { item: "sword" },
@@ -130,8 +115,6 @@ const HOTBAR: { item: SpriteName; count?: number }[] = [
   { item: "spyglass" },
 ];
 
-/* ------------------------------------------------------------------ */
-/** Hearts, hunger, xp and the hotbar under the chat, all from the real HUD textures. */
 function Hud() {
   const [ref, s] = useFit(182, 40, 2.5);
   const bg = (url: string, w: number, h: number, x = 0, y = 0): CSSProperties => ({
@@ -170,10 +153,6 @@ function Hud() {
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/* 1. Alerts in chat                                                   */
-/* ------------------------------------------------------------------ */
 
 const ALERT_CHAT: { at: number; text: string }[] = [
   { at: 0, text: "§f<Steve> ktoś widział aftoxd na arenie?" },
@@ -230,10 +209,6 @@ export function AlertsDemo({ t }: DemoProps) {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* 2. Commands with vanilla style suggestions                          */
-/* ------------------------------------------------------------------ */
-
 const SUBS = ["ban", "gui", "info", "logs", "reload"];
 
 const RUNS: { cmd: string; start: number; enter: number; out: string[] }[] = [
@@ -264,7 +239,6 @@ export function CommandDemo({ t }: DemoProps) {
   const out = RUNS.filter((r) => t >= r.enter + 150).flatMap((r) => r.out.map((o, k) => ({ o, k, key: r.cmd + k, at: r.enter + 150 + k * 90 })));
   const shown = out.filter((l) => t >= l.at).slice(-8);
 
-  // Suggestions appear while the sub command is being typed, like Brigadier in vanilla.
   const sub = typed.startsWith("/fg ") ? typed.slice(4) : null;
   const suggestions = sub !== null && !sub.includes(" ") ? SUBS.filter((x) => x.startsWith(sub)) : [];
 
@@ -309,10 +283,6 @@ export function CommandDemo({ t }: DemoProps) {
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/* 3. /fg gui: the real chest texture                                  */
-/* ------------------------------------------------------------------ */
 
 const GUI: { slot: number; item: SpriteName; lines: string[] }[] = [
   { slot: 4, item: "head", lines: ["§baftoxd", "§7Ping: §f38 ms", "§7Klient: §f1.21.1", "§7Online: §f2h 14m"] },
@@ -374,10 +344,6 @@ export function GuiDemo({ t }: DemoProps) {
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/* 4. Discord channel                                                  */
-/* ------------------------------------------------------------------ */
 
 const EVENTS = [
   { at: 300, time: "21:42", title: "Nowa flaga", color: "#80848e", check: "Reach (A)", vl: 3, action: "Brak" },
@@ -445,10 +411,6 @@ export function DiscordDemo({ t }: DemoProps) {
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/* 5. Web panel config                                                 */
-/* ------------------------------------------------------------------ */
 
 const CFG = [
   { name: "KillAura", cat: "Walka" },

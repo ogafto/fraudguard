@@ -3,9 +3,6 @@ import { cacheLife, cacheTag, updateTag } from "next/cache";
 import { coerceContent, DEFAULT_CONTENT, type ContentKey, type ContentMap } from "../content";
 import { db } from "./db";
 
-// CMS storage. The site reads the published version through a cache that is refreshed the moment
-// an admin publishes; the admin panel works on a draft, and every publish is kept in the history.
-
 export const contentTag = (key: ContentKey) => `content:${key}`;
 
 type Row = { published: unknown; draft: unknown; published_at: string | null; updated_at: string; updated_by: string | null };
@@ -15,12 +12,10 @@ async function row(key: ContentKey) {
   return r;
 }
 
-/** What visitors see. Falls back to the starting texts until something is published. */
 export async function getPublishedContent<K extends ContentKey>(key: K): Promise<ContentMap[K]> {
   "use cache";
   cacheTag(contentTag(key));
   cacheLife("max");
-  // A local build must not open the embedded database the dev server already holds.
   if (!process.env.DATABASE_URL && process.env.NEXT_PHASE === "phase-production-build") return DEFAULT_CONTENT[key];
   try {
     const r = await row(key);
@@ -38,7 +33,6 @@ export type EditorState<K extends ContentKey> = {
   updatedBy: string | null;
 };
 
-/** The admin's working copy: the draft if there is one, otherwise what is published. */
 export async function getEditorState<K extends ContentKey>(key: K): Promise<EditorState<K>> {
   const r = await row(key);
   const source = r?.draft ?? r?.published;
@@ -85,14 +79,12 @@ export async function listVersions(key: ContentKey) {
   );
 }
 
-/** Puts an old version back into the draft, so it can be checked in the preview before publishing. */
 export async function restoreVersion<K extends ContentKey>(key: K, id: string, author: string) {
   const [v] = await db<{ data: unknown }>(`select data from content_versions where key = $1 and id = $2`, [key, id]);
   if (!v) return null;
   return saveDraft(key, v.data, author);
 }
 
-/** Last publish time and whether a draft is waiting, for the CMS overview. */
 export async function contentStatus() {
   const rows = await db<{ key: ContentKey; has_draft: boolean; published_at: string | null; updated_at: string; updated_by: string | null }>(
     `select key, draft is not null as has_draft, published_at, updated_at, updated_by from content`,

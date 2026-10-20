@@ -220,7 +220,6 @@ function IntegrationCard({ name, fields, email, index }: { name: IntegrationName
   );
 }
 
-/** The one Discord invite used across the site: footer, CTA, documents and every pricing button. */
 function DiscordLinkCard({ discordUrl }: { discordUrl: string }) {
   const router = useRouter();
   const [result, setResult] = useState<ActionResult | null>(null);
