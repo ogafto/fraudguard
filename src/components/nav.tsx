@@ -4,23 +4,28 @@ import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "motion/
 import { useLenis } from "lenis/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, type ComponentType, type SVGProps } from "react";
-import { IconBell, IconChart, IconDiscord, IconGrid, IconSliders } from "./icons";
+import { useRef, useState, type ReactNode } from "react";
+import { IconChart, IconDiscord } from "./icons";
 import { LogoMark } from "./logo";
+import { McItem } from "./mc-ui";
 
 export const NAV_LINKS = [
   { label: "Funkcje", href: "#features" },
-  { label: "Wykrywanie", href: "#detection" },
   { label: "Cennik", href: "#pricing" },
   { label: "FAQ", href: "#faq" },
 ];
 
-const PRODUCT: { title: string; desc: string; href: string; Icon: ComponentType<SVGProps<SVGSVGElement>> }[] = [
-  { title: "Alerty w grze", desc: "Flagi na czacie w czasie rzeczywistym", href: "#feature-0", Icon: IconBell },
-  { title: "Komendy i GUI", desc: "Cała historia gracza pod ręką", href: "#feature-1", Icon: IconGrid },
-  { title: "Alerty na Discordzie", desc: "Każda akcja na kanale administracji", href: "#feature-3", Icon: IconDiscord },
-  { title: "Konfiguracja na żywo", desc: "Strój checki bez restartu serwera", href: "#feature-4", Icon: IconSliders },
+// Same order as the tabs in the features section: picking one opens that tab.
+const PRODUCT: { title: string; desc: string; icon: ReactNode }[] = [
+  { title: "Alerty w grze", desc: "Flagi na czacie w czasie rzeczywistym", icon: <McItem name="sword" className="size-[18px]" /> },
+  { title: "Komendy", desc: "Profil gracza i ban pod /fg", icon: <McItem name="command" className="size-[18px]" /> },
+  { title: "Menu gracza", desc: "Cała historia gracza w GUI", icon: <McItem name="head" head="aftoxd" className="size-[18px]" /> },
+  { title: "Alerty na Discordzie", desc: "Każda akcja na kanale administracji", icon: <IconDiscord className="size-4" /> },
+  { title: "Konfiguracja", desc: "Czułość checków bez restartu", icon: <McItem name="comparator" className="size-[18px]" /> },
 ];
+
+/** Event the features section listens to, so the menu can open a specific tab. */
+export const FEATURE_EVENT = "fg:feature";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -35,19 +40,21 @@ export function useScrollTo() {
   };
 }
 
-function MegaMenu({ onPick }: { onPick: (href: string) => void }) {
+function MegaMenu({ onPick, onEnter }: { onPick: (href: string, tab?: number) => void; onEnter: () => void }) {
   return (
+    // pt-3 instead of a margin: the padding is part of the menu, so the pointer never "leaves" on the way down.
+    <div className="absolute left-1/2 top-full z-10 w-[660px] -translate-x-1/2 pt-3" onMouseEnter={onEnter}>
     <motion.div
       initial={{ opacity: 0, y: -10, scale: 0.97, filter: "blur(8px)" }}
       animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
       exit={{ opacity: 0, y: -6, scale: 0.98, filter: "blur(6px)" }}
-      transition={{ duration: 0.35, ease: EASE }}
+      transition={{ duration: 0.3, ease: EASE }}
       style={{ transformOrigin: "50% 0%" }}
-      className="absolute left-1/2 top-full z-10 mt-3 w-[640px] -translate-x-1/2 rounded-3xl bg-[#0f1012]/90 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_0_1px_rgba(255,255,255,0.08),0_30px_80px_-20px_rgba(0,0,0,0.9)] backdrop-blur-2xl"
+      className="rounded-3xl bg-[#0f1012]/90 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_0_1px_rgba(255,255,255,0.08),0_30px_80px_-20px_rgba(0,0,0,0.9)] backdrop-blur-2xl"
     >
       <div className="grid grid-cols-[1.25fr_1fr] gap-2">
-        <ul className="grid gap-1 p-1">
-          {PRODUCT.map(({ title, desc, href, Icon }, i) => (
+        <ul className="grid gap-0.5 p-1">
+          {PRODUCT.map(({ title, desc, icon }, i) => (
             <motion.li
               key={title}
               initial={{ opacity: 0, x: -8 }}
@@ -55,15 +62,15 @@ function MegaMenu({ onPick }: { onPick: (href: string) => void }) {
               transition={{ duration: 0.4, ease: EASE, delay: 0.04 + i * 0.04 }}
             >
               <a
-                href={href}
+                href="#features"
                 onClick={(e) => {
                   e.preventDefault();
-                  onPick(href);
+                  onPick("#features", i);
                 }}
-                className="group flex items-start gap-3 rounded-2xl p-3 transition-colors hover:bg-white/[0.05]"
+                className="group flex items-center gap-3 rounded-2xl p-2.5 transition-colors hover:bg-white/[0.05]"
               >
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.05] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_0_1px_rgba(255,255,255,0.06)] transition-colors group-hover:bg-fg group-hover:text-bg">
-                  <Icon className="size-4" />
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.04] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_0_1px_rgba(255,255,255,0.06)] transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110">
+                  {icon}
                 </span>
                 <span>
                   <span className="block text-[14px] font-medium">{title}</span>
@@ -104,6 +111,7 @@ function MegaMenu({ onPick }: { onPick: (href: string) => void }) {
         </motion.a>
       </div>
     </motion.div>
+    </div>
   );
 }
 
@@ -116,6 +124,22 @@ export function Nav() {
   const [open, setOpen] = useState(false);
   const scrollTo = useScrollTo();
   const router = useRouter();
+  // Small delay before closing, so a pointer that slips off for a moment does not shut the menu.
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const keepMenu = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+  };
+  const openMenu = (on: boolean) => {
+    keepMenu();
+    setMenu(on);
+  };
+  const closeSoon = () => {
+    keepMenu();
+    closeTimer.current = setTimeout(() => {
+      setMenu(false);
+      setHover(null);
+    }, 220);
+  };
 
   useMotionValueEvent(scrollY, "change", (y) => {
     const prev = scrollY.getPrevious() ?? 0;
@@ -126,10 +150,17 @@ export function Nav() {
     else if (y < prev - 4) setHidden(false);
   });
 
-  const go = (href: string) => {
+  const go = (href: string, tab?: number) => {
     setOpen(false);
     setMenu(false);
     if (href.startsWith("/")) return router.push(href);
+    if (tab !== undefined) {
+      // Live event for this page, and a note for the home page in case we navigate there first.
+      window.dispatchEvent(new CustomEvent(FEATURE_EVENT, { detail: tab }));
+      try {
+        sessionStorage.setItem(FEATURE_EVENT, String(tab));
+      } catch {}
+    }
     scrollTo(href);
   };
 
@@ -139,10 +170,8 @@ export function Nav() {
       initial={{ y: -80, opacity: 0 }}
       animate={{ y: hidden ? -100 : 0, opacity: 1 }}
       transition={{ duration: 0.6, ease: EASE }}
-      onMouseLeave={() => {
-        setHover(null);
-        setMenu(false);
-      }}
+      onMouseLeave={closeSoon}
+      onMouseEnter={keepMenu}
     >
       <div className="relative w-full max-w-[920px]">
         <motion.nav
@@ -172,7 +201,7 @@ export function Nav() {
               <li key={l.label} onMouseEnter={() => setHover(l.label)}>
                 <a
                   href={l.href}
-                  onMouseEnter={() => setMenu(!!("menu" in l && l.menu))}
+                  onMouseEnter={() => openMenu(!!("menu" in l && l.menu))}
                   onClick={(e) => {
                     e.preventDefault();
                     go(l.href);
@@ -203,7 +232,7 @@ export function Nav() {
             ))}
           </ul>
 
-          <div className="flex items-center gap-1.5" onMouseEnter={() => setMenu(false)}>
+          <div className="flex items-center gap-1.5" onMouseEnter={() => openMenu(false)}>
             <Link href="/logowanie" className="hidden rounded-full px-3.5 py-2 text-[14px] text-muted transition-colors hover:text-fg sm:block">
               Zaloguj się
             </Link>
@@ -228,7 +257,7 @@ export function Nav() {
           </div>
         </motion.nav>
 
-        <AnimatePresence>{menu && <MegaMenu onPick={go} />}</AnimatePresence>
+        <AnimatePresence>{menu && <MegaMenu onPick={go} onEnter={keepMenu} />}</AnimatePresence>
 
         {/* Mobile sheet grows out of the pill */}
         <AnimatePresence>

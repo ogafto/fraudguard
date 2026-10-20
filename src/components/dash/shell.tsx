@@ -2,8 +2,8 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState, type ComponentType, type ReactNode, type SVGProps } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode, type SVGProps } from "react";
 import {
   IconBell,
   IconBox,
@@ -17,11 +17,17 @@ import {
   IconTicket,
   IconUsers,
   IconCog,
+  IconSearch,
 } from "../icons";
+import { logout } from "@/lib/auth";
+import { SERVERS } from "@/lib/mock";
 import { LogoMark } from "../logo";
 import { McHead } from "../mc-head";
 
 type NavItem = { label: string; href: string; Icon: ComponentType<SVGProps<SVGSVGElement>>; badge?: string };
+
+/** The signed in user shown in the sidebar. */
+export type DashUser = { nick: string; email: string };
 
 const NAV: Record<"client" | "admin", { label: string; items: NavItem[] }[]> = {
   client: [
@@ -62,7 +68,7 @@ const NAV: Record<"client" | "admin", { label: string; items: NavItem[] }[]> = {
   ],
 };
 
-function Sidebar({ variant, onNavigate }: { variant: "client" | "admin"; onNavigate?: () => void }) {
+function Sidebar({ variant, user, onNavigate }: { variant: "client" | "admin"; user: DashUser; onNavigate?: () => void }) {
   const pathname = usePathname();
   const isActive = (href: string) => (href === "/panel" || href === "/admin" ? pathname === href : pathname.startsWith(href));
 
@@ -114,26 +120,174 @@ function Sidebar({ variant, onNavigate }: { variant: "client" | "admin"; onNavig
       </nav>
 
       <div className="mt-4 flex items-center gap-3 rounded-xl p-2.5 shadow-[0_0_0_1px_rgba(255,255,255,0.06)]">
-        <McHead name={variant === "admin" ? "AdminFG" : "Kuba_SMP"} className="size-8 rounded-lg" />
+        <McHead name={user.nick} className="size-8 rounded-lg" />
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[13px] font-medium">{variant === "admin" ? "Zespół FraudGuard" : "Survival.pl"}</div>
-          <div className="truncate text-[12px] text-dim">{variant === "admin" ? "admin@fraudguard.net" : "admin@survival.pl"}</div>
+          <div className="truncate text-[13px] font-medium">{user.nick}</div>
+          <div className="truncate text-[12px] text-dim">{variant === "admin" ? "Administrator" : "Survival.pl · plan Pro"}</div>
         </div>
-        <Link href="/logowanie" className="rounded-md p-1.5 text-dim transition-colors hover:bg-white/[0.05] hover:text-fg" aria-label="Wyloguj">
-          <IconLogout className="size-4" />
-        </Link>
+        <form action={logout}>
+          <button type="submit" className="rounded-md p-1.5 text-dim transition-colors hover:bg-white/[0.05] hover:text-fg" aria-label="Wyloguj">
+            <IconLogout className="size-4" />
+          </button>
+        </form>
       </div>
     </div>
   );
 }
 
-export function DashShell({ variant, children }: { variant: "client" | "admin"; children: ReactNode }) {
+/* ------------------------------------------------------------------ */
+/* Command palette (⌘K) and top bar                                    */
+/* ------------------------------------------------------------------ */
+
+const isActivePath = (pathname: string, href: string) => (href === "/panel" || href === "/admin" ? pathname === href : pathname.startsWith(href));
+
+const LOGOUT = "#wyloguj";
+
+function Palette({ variant, onClose }: { variant: "client" | "admin"; onClose: () => void }) {
+  const router = useRouter();
+  const [q, setQ] = useState("");
+  const [sel, setSel] = useState(0);
+  const input = useRef<HTMLInputElement>(null);
+  const all = useMemo(
+    () => [
+      ...NAV[variant].flatMap((g) => g.items.map((it) => ({ ...it, group: g.label }))),
+      { label: variant === "admin" ? "Panel klienta" : "Panel admina", href: variant === "admin" ? "/panel" : "/admin", Icon: IconGrid, group: "Przejdź" },
+      { label: "Strona główna", href: "/", Icon: IconBox, group: "Przejdź" },
+      { label: "Wyloguj", href: LOGOUT, Icon: IconLogout, group: "Konto" },
+    ],
+    [variant],
+  );
+  const list = all.filter((it) => it.label.toLowerCase().includes(q.trim().toLowerCase()));
+  const cur = Math.min(sel, Math.max(0, list.length - 1));
+
+  useEffect(() => input.current?.focus(), []);
+
+  const open = (href: string) => {
+    onClose();
+    if (href === LOGOUT) logout();
+    else router.push(href);
+  };
+
+  return (
+    <>
+      <motion.div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
+      <motion.div
+        role="dialog"
+        aria-label="Szukaj w panelu"
+        className="fixed inset-x-4 top-[12vh] z-[61] mx-auto max-w-[560px] overflow-hidden rounded-2xl bg-[#111214]/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_0_1px_rgba(255,255,255,0.1),0_40px_100px_-20px_rgba(0,0,0,0.95)] backdrop-blur-2xl"
+        initial={{ opacity: 0, y: -16, scale: 0.97, filter: "blur(8px)" }}
+        animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+        exit={{ opacity: 0, y: -8, scale: 0.98, filter: "blur(6px)" }}
+        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <div className="flex items-center gap-3 border-b border-line px-4">
+          <IconSearch className="size-4 text-dim" />
+          <input
+            ref={input}
+            value={q}
+            onChange={(e) => {
+              setQ(e.target.value);
+              setSel(0);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                setSel((v) => Math.min(list.length - 1, v + 1));
+              }
+              if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setSel((v) => Math.max(0, v - 1));
+              }
+              if (e.key === "Enter" && list[cur]) open(list[cur].href);
+              if (e.key === "Escape") onClose();
+            }}
+            placeholder="Szukaj strony lub akcji…"
+            className="h-14 flex-1 bg-transparent text-[15px] outline-none placeholder:text-dim"
+          />
+          <kbd className="rounded-md px-1.5 py-0.5 font-mono text-[11px] text-dim shadow-[0_0_0_1px_rgba(255,255,255,0.1)]">esc</kbd>
+        </div>
+        <ul className="max-h-[50vh] overflow-y-auto p-2">
+          {list.length === 0 && <li className="px-3 py-8 text-center text-[14px] text-dim">Nic nie znaleziono.</li>}
+          {list.map((it, i) => (
+            <li key={it.href + it.label}>
+              <button
+                onMouseEnter={() => setSel(i)}
+                onClick={() => open(it.href)}
+                className={`relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[14px] transition-colors ${i === cur ? "text-fg" : "text-muted"}`}
+              >
+                {i === cur && (
+                  <motion.span layoutId="palette-sel" className="absolute inset-0 rounded-xl bg-white/[0.06]" transition={{ type: "spring", stiffness: 600, damping: 40 }} />
+                )}
+                <it.Icon className="relative size-4" />
+                <span className="relative flex-1">{it.label}</span>
+                <span className="relative text-[12px] text-dim">{it.group}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </motion.div>
+    </>
+  );
+}
+
+function TopBar({ variant, onSearch }: { variant: "client" | "admin"; onSearch: () => void }) {
+  const pathname = usePathname();
+  const current = NAV[variant].flatMap((g) => g.items).find((it) => isActivePath(pathname, it.href));
+  return (
+    <div className="sticky top-0 z-20 hidden h-14 items-center gap-4 border-b border-line bg-bg/70 px-8 backdrop-blur-xl lg:flex">
+      <nav className="flex items-center gap-2 text-[13.5px]" aria-label="Okruszki">
+        <span className="text-dim">{variant === "admin" ? "Admin" : "Panel"}</span>
+        <span className="text-dim">/</span>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.span
+            key={current?.label}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.2 }}
+            className="text-fg"
+          >
+            {current?.label}
+          </motion.span>
+        </AnimatePresence>
+      </nav>
+      <div className="ml-auto flex items-center gap-2">
+        <span className="flex items-center gap-2 rounded-full px-3 py-1.5 text-[12.5px] text-muted shadow-[0_0_0_1px_rgba(255,255,255,0.07)]">
+          <span className="size-1.5 animate-pulse-dot rounded-full bg-ok text-ok/50" />
+          {variant === "admin" ? "Wszystkie systemy działają" : `${SERVERS.filter((x) => x.online).length} z ${SERVERS.length} serwerów online`}
+        </span>
+        <button
+          onClick={onSearch}
+          className="flex h-9 w-56 items-center gap-2.5 rounded-full bg-white/[0.03] px-3.5 text-[13px] text-dim shadow-[0_0_0_1px_rgba(255,255,255,0.08)] transition-colors hover:bg-white/[0.05] hover:text-muted"
+        >
+          <IconSearch className="size-3.5" />
+          Szukaj…
+          <kbd className="ml-auto font-mono text-[11px]">⌘K</kbd>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function DashShell({ variant, user, children }: { variant: "client" | "admin"; user: DashUser; children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [palette, setPalette] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPalette((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   return (
     <div className="min-h-[100svh] lg:pl-[248px]">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] border-r border-line bg-[#0a0b0c] lg:block">
-        <Sidebar variant={variant} />
+        <Sidebar variant={variant} user={user} />
       </aside>
 
       {/* Mobile top bar */}
@@ -144,11 +298,16 @@ export function DashShell({ variant, children }: { variant: "client" | "admin"; 
           </span>
           <span className="text-[14.5px] font-semibold">FraudGuard</span>
         </Link>
+        <div className="flex items-center gap-1">
+        <button onClick={() => setPalette(true)} className="rounded-lg p-2 text-muted hover:text-fg" aria-label="Szukaj">
+          <IconSearch className="size-[18px]" />
+        </button>
         <button onClick={() => setOpen(true)} className="rounded-lg p-2 text-muted hover:text-fg" aria-label="Otwórz menu">
           <svg viewBox="0 0 16 16" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden>
             <path d="M2.5 5h11M2.5 11h11" strokeLinecap="round" />
           </svg>
         </button>
+        </div>
       </div>
 
       <AnimatePresence>
@@ -168,11 +327,14 @@ export function DashShell({ variant, children }: { variant: "client" | "admin"; 
               exit={{ x: "-100%" }}
               transition={{ type: "spring", stiffness: 380, damping: 38 }}
             >
-              <Sidebar variant={variant} onNavigate={() => setOpen(false)} />
+              <Sidebar variant={variant} user={user} onNavigate={() => setOpen(false)} />
             </motion.aside>
           </>
         )}
       </AnimatePresence>
+
+      <TopBar variant={variant} onSearch={() => setPalette(true)} />
+      <AnimatePresence>{palette && <Palette variant={variant} onClose={() => setPalette(false)} />}</AnimatePresence>
 
       <main className="mx-auto w-full max-w-[1280px] px-4 pb-16 pt-6 sm:px-8 sm:pt-8">{children}</main>
     </div>

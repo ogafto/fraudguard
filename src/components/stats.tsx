@@ -24,10 +24,10 @@ function Counter({ to, decimals = 0, suffix = "" }: { to: number; decimals?: num
 
 // Product facts only: no invented user counts or accuracy percentages.
 const STATS: { to?: number; text?: string; decimals?: number; prefix?: string; suffix?: string; label: string }[] = [
-  { text: "1.8 do 1.21", label: "wspierane wersje gry" },
+  { text: "1.20+", label: "tylko nowe wersje gry" },
   { to: 0.2, decimals: 1, prefix: "~", suffix: " ms", label: "średni koszt na tick" },
   { to: 30, suffix: " s", label: "instalacja na serwerze" },
-  { text: "Java + Bedrock", label: "w jednej licencji" },
+  { text: "Discord", label: "alerty i wsparcie" },
 ];
 
 export function Stats() {

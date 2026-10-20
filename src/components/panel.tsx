@@ -53,7 +53,7 @@ export function Scaled({ width, children, className }: { width: number; children
 /* ------------------------------------------------------------------ */
 
 const PLAYERS = [
-  "xX_Sn1per_Xx", "Notch_Fan99", "BlockBreaker", "q1ckscope", "Dr34mer", "PvP_God_2011",
+  "aftoxd", "Notch_Fan99", "BlockBreaker", "q1ckscope", "Dr34mer", "PvP_God_2011",
   "Herobrine404", "creeperking", "mlg_water", "Sweaty_Tryhard", "EnderPearl_", "lagswitch",
 ];
 const CHECKS = [
@@ -369,9 +369,9 @@ export function Panel() {
           <div className="flex flex-col gap-4">
             <div className="rounded-xl bg-white/[0.02] p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.06)]">
               <div className="flex items-center gap-3">
-                <McHead name="xX_Sn1per_Xx" className="size-10 rounded-lg" />
+                <McHead name="aftoxd" className="size-10 rounded-lg" />
                 <div className="min-w-0">
-                  <div className="truncate text-[14px] font-medium">xX_Sn1per_Xx</div>
+                  <div className="truncate text-[14px] font-medium">aftoxd</div>
                   <div className="text-[11.5px] text-dim">Java · 1.20.4 · 38 ms</div>
                 </div>
               </div>

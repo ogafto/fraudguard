@@ -11,7 +11,7 @@ export function ClientOverview() {
   return (
     <>
       <PageHeader
-        title="Dobry wieczór, Kuba"
+        title="Cześć, aftoxd"
         desc="Tak wygląda ochrona Twoich serwerów w ostatnich 24 godzinach."
         actions={
           <>

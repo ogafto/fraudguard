@@ -1,11 +1,11 @@
-import { Detection } from "@/components/detection";
 import { Faq } from "@/components/faq";
-import { Features } from "@/components/features";
-import { FinalCta, Footer } from "@/components/footer";
+import { Footer } from "@/components/footer";
 import { Hero } from "@/components/hero";
 import { Nav } from "@/components/nav";
-import { Pricing } from "@/components/pricing";
 import { Stats } from "@/components/stats";
+import { CtaV2 } from "@/components/v2/cta-v2";
+import { FeaturesV2 } from "@/components/v2/features-v2";
+import { PricingV2 } from "@/components/v2/pricing-v2";
 
 export default function Home() {
   return (
@@ -14,11 +14,10 @@ export default function Home() {
       <main>
         <Hero />
         <Stats />
-        <Features />
-        <Detection />
-        <Pricing />
+        <FeaturesV2 />
+        <PricingV2 />
         <Faq />
-        <FinalCta />
+        <CtaV2 />
       </main>
       <Footer />
     </>

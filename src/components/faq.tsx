@@ -7,7 +7,7 @@ import { EASE, Reveal, SectionHeading } from "./ui";
 const FAQ = [
   {
     q: "Na jakich wersjach Minecrafta działa FraudGuard?",
-    a: "Od 1.8 do 1.21.x na silnikach Paper, Spigot, Purpur i Folia. Gracze łączący się przez ViaVersion są w pełni obsługiwani.",
+    a: "Od 1.20 wzwyż, na silnikach Paper, Spigot, Purpur i Folia. Skupiamy się tylko na nowych wersjach, dzięki czemu checki są dokładniejsze.",
   },
   {
     q: "Czy anticheat będzie banował uczciwych graczy?",
@@ -18,8 +18,8 @@ const FAQ = [
     a: "Średnio około 0.2 ms na tick. Analiza pakietów odbywa się asynchronicznie, poza głównym wątkiem serwera.",
   },
   {
-    q: "Czy FraudGuard wspiera graczy Bedrock?",
-    a: "Tak. Integracja z Geyser i Floodgate rozpoznaje graczy Bedrock automatycznie, a checki dostosowują się do ich mechaniki ruchu.",
+    q: "Na ilu serwerach mogę używać licencji?",
+    a: "Starter obejmuje jeden serwer, Pro do trzech, a Network nie ma limitu. Plan zmienisz w panelu klienta.",
   },
   {
     q: "Czy działa na sieci z Velocity lub BungeeCord?",
@@ -27,7 +27,7 @@ const FAQ = [
   },
   {
     q: "Jak wygląda wsparcie?",
-    a: "Odpowiadamy na Discordzie i mailowo. W planach Pro i Network masz priorytet w kolejce.",
+    a: "Zespół odpowiada na Discordzie. W planach Pro i Network masz priorytet w kolejce.",
   },
 ];
 
@@ -39,7 +39,7 @@ export function Faq() {
       <div className="mx-auto grid max-w-[1200px] gap-12 lg:grid-cols-[0.8fr_1.2fr]">
         <div className="lg:sticky lg:top-32 lg:self-start">
           <SectionHeading eyebrow="FAQ" title={["Częste", "\n", "pytania."]}>
-            Nie ma tu Twojego pytania? Napisz do nas, odpowiadamy zwykle w kilka godzin.
+            Nie ma tu Twojego pytania? Zapytaj na Discordzie, odpowiadamy zwykle w kilka godzin.
           </SectionHeading>
         </div>
 
@@ -47,7 +47,7 @@ export function Faq() {
           {FAQ.map((item, i) => {
             const on = open === i;
             return (
-              <Reveal key={item.q} from="right" distance={50} delay={i * 0.06}>
+              <Reveal key={item.q} from="up" distance={24} delay={i * 0.06}>
                 <li
                   className={`rounded-xl transition-[background-color,box-shadow] duration-300 ${on ? "bg-white/[0.035] shadow-[0_0_0_1px_rgba(255,255,255,0.09)]" : "shadow-[0_0_0_1px_rgba(255,255,255,0.05)] hover:bg-white/[0.02]"}`}
                 >

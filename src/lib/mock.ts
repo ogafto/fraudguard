@@ -5,11 +5,11 @@ export type AlertAction = "flaga" | "cofnięcie" | "kick" | "ban";
 export const SERVERS = [
   { id: "srv-1", name: "Survival EU", ip: "play.survival.pl", version: "Paper 1.21.1", players: 1284, max: 2000, tps: 20.0, tick: 0.21, plugin: "2.0.0", online: true },
   { id: "srv-2", name: "SkyBlock", ip: "sky.survival.pl", version: "Purpur 1.20.4", players: 642, max: 1000, tps: 19.9, tick: 0.18, plugin: "2.0.0", online: true },
-  { id: "srv-3", name: "BoxPvP", ip: "box.survival.pl", version: "Paper 1.8.9", players: 318, max: 500, tps: 20.0, tick: 0.27, plugin: "1.9.4", online: true },
+  { id: "srv-3", name: "BoxPvP", ip: "box.survival.pl", version: "Paper 1.21.1", players: 318, max: 500, tps: 20.0, tick: 0.27, plugin: "1.9.4", online: true },
   { id: "srv-4", name: "Lobby", ip: "lobby.survival.pl", version: "Velocity 3.3", players: 0, max: 3000, tps: 0, tick: 0, plugin: "2.0.0", online: false },
 ];
 
-const PLAYERS = ["xX_Sn1per_Xx", "q1ckscope", "Dr34mer", "BlockBreaker", "lagswitch", "PvP_God_2011", "Herobrine404", "creeperking", "mlg_water", "Sweaty_Tryhard", "EnderPearl_", "Notch_Fan99"];
+const PLAYERS = ["aftoxd", "q1ckscope", "Dr34mer", "BlockBreaker", "lagswitch", "PvP_God_2011", "Herobrine404", "creeperking", "mlg_water", "Sweaty_Tryhard", "EnderPearl_", "Notch_Fan99"];
 const CHECKS = [
   ["KillAura C", "Walka"],
   ["Reach A", "Walka"],

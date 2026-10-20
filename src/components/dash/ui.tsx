@@ -1,7 +1,7 @@
 "use client";
 
-import { motion } from "motion/react";
-import type { ReactNode } from "react";
+import { animate, motion, useInView } from "motion/react";
+import { useEffect, useRef, type ReactNode } from "react";
 import type { AlertAction } from "@/lib/mock";
 import { McHead } from "../mc-head";
 import { EASE } from "../ui";
@@ -57,6 +57,41 @@ export function Block({
   );
 }
 
+/** Counts the number inside a string like "3 912", "18 420 zł" or "0,21 ms" up from zero. */
+function CountUp({ value, delay = 0 }: { value: string; delay?: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true });
+  const done = useRef(false);
+  useEffect(() => {
+    const m = value.match(/^(\D*?)(\d[\d\s\u00a0]*(?:,\d+)?)(.*)$/);
+    if (!ref.current) return;
+    // Count once; later value changes (live data) just show the new number.
+    if (!m || done.current) {
+      ref.current.textContent = value;
+      return;
+    }
+    if (!inView) return;
+    const [, pre, num, post] = m;
+    const decimals = num.includes(",") ? num.split(",")[1].length : 0;
+    const target = parseFloat(num.replace(/[\s\u00a0]/g, "").replace(",", "."));
+    const el = ref.current;
+    const ctrl = animate(0, target, {
+      duration: 1.4,
+      delay: delay + 0.15,
+      ease: [0.16, 1, 0.3, 1],
+      onUpdate: (v) => {
+        el.textContent = pre + v.toLocaleString("pl-PL", { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + post;
+      },
+      onComplete: () => {
+        done.current = true;
+        el.textContent = value;
+      },
+    });
+    return () => ctrl.stop();
+  }, [inView, delay, value]);
+  return <span ref={ref}>{value}</span>;
+}
+
 export function Stat({
   label,
   value,
@@ -81,17 +116,29 @@ export function Stat({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.55, ease: EASE, delay }}
-      className="card p-5"
+      whileHover={{ y: -3 }}
+      className="card group p-5 transition-shadow duration-500 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.09),0_0_0_1px_rgba(255,255,255,0.14),0_20px_40px_-20px_rgba(0,0,0,0.9)]"
     >
       <div className="text-[13px] text-muted">{label}</div>
       <div className="mt-3 flex items-end justify-between gap-3">
         <div>
-          <div className="text-[28px] font-medium leading-none tracking-[-0.03em]">{value}</div>
+          <div className="text-[28px] font-medium leading-none tracking-[-0.03em] tabular-nums">
+            <CountUp value={value} delay={delay} />
+          </div>
           {delta && <div className={`mt-2 text-[12.5px] ${positive ? "text-ok" : "text-danger"}`}>{delta}</div>}
         </div>
         {pts.length > 1 && (
           <svg viewBox="0 0 100 32" className="h-8 w-24" preserveAspectRatio="none">
-            <polyline points={d} fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1.4" vectorEffect="non-scaling-stroke" />
+            <motion.polyline
+              points={d}
+              fill="none"
+              stroke="rgba(255,255,255,0.6)"
+              strokeWidth="1.4"
+              vectorEffect="non-scaling-stroke"
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 1.2, ease: EASE, delay: delay + 0.2 }}
+            />
           </svg>
         )}
       </div>

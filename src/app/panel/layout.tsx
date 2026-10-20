@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
-import { DashShell } from "@/components/dash/shell";
+import { Suspense } from "react";
+import { DashGuard } from "@/components/dash/guard";
 
 export const metadata: Metadata = { title: "Panel klienta | FraudGuard" };
 
 export default function PanelLayout({ children }: { children: React.ReactNode }) {
-  return <DashShell variant="client">{children}</DashShell>;
+  return (
+    <Suspense>
+      <DashGuard variant="client">{children}</DashGuard>
+    </Suspense>
+  );
 }

@@ -63,8 +63,11 @@
   color-scheme: dark;
 }
 
+/* Clip on html as well, so body's clip is not handed to the viewport: body then
+   really clips wide glows and offscreen reveals, and the page can never scroll sideways. */
 html {
   background: var(--color-bg);
+  overflow-x: clip;
 }
 
 body {
