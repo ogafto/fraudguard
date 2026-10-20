@@ -1,5 +1,6 @@
 import "server-only";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { cache } from "react";
 import { db } from "./db";
@@ -12,12 +13,16 @@ export type Role = "client" | "admin";
 export type SessionUser = { id: string; nick: string; email: string; role: Role };
 
 /** Emails listed in ADMIN_EMAILS (comma separated) get the admin role on top of the one stored in the database. */
-function roleFor(email: string, stored: string): Role {
-  const admins = (process.env.ADMIN_EMAILS ?? "")
+export function isAdminEmail(email: string) {
+  return (process.env.ADMIN_EMAILS ?? "")
     .split(",")
     .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-  return stored === "admin" || admins.includes(email) ? "admin" : "client";
+    .filter(Boolean)
+    .includes(email.toLowerCase());
+}
+
+function roleFor(email: string, stored: string): Role {
+  return stored === "admin" || isAdminEmail(email) ? "admin" : "client";
 }
 
 /** Starts a session for the user and sets the httpOnly cookie. Only the token's hash is stored. */
@@ -54,5 +59,13 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   );
   return row ? { id: row.id, nick: row.nick, email: row.email, role: roleFor(row.email, row.role) } : null;
 });
+
+/** For admin pages that read data: checks the role close to the data, not only in the layout. */
+export async function requireAdminUser() {
+  const user = await getCurrentUser();
+  if (!user) redirect("/logowanie");
+  if (user.role !== "admin") redirect("/panel");
+  return user;
+}
 
 export const SESSION_COOKIE = COOKIE;

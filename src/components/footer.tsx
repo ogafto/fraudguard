@@ -1,16 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { SITE } from "@/lib/site";
 import { Wordmark } from "./logo";
+import { useContent } from "./content-context";
+import { useSite } from "./site-context";
 import { NAV_LINKS, useScrollTo } from "./nav";
 import { Arrow } from "./ui";
 
 export function Footer() {
   const scrollTo = useScrollTo();
+  const { discordUrl } = useSite();
+  const { tagline } = useContent("home").footer;
   const cols = [
     { h: "Produkt", items: [NAV_LINKS[0], NAV_LINKS[1]] },
-    { h: "Wsparcie", items: [NAV_LINKS[2], { label: "Discord", href: SITE.discordUrl }] },
+    { h: "Wsparcie", items: [NAV_LINKS[2], { label: "Discord", href: discordUrl }] },
     {
       h: "Konto",
       items: [
@@ -28,7 +31,7 @@ export function Footer() {
         <div className="col-span-2 sm:col-span-3 md:col-span-1">
           <Wordmark />
           <p className="mt-4 max-w-[260px] text-[14px] leading-relaxed text-dim">
-            Anticheat dla serwerów Minecraft. Cheaterzy nie mają szans.
+            {tagline}
           </p>
         </div>
         {cols.map((col) => (

@@ -2,6 +2,7 @@
 
 import { animate, useInView } from "motion/react";
 import { useEffect, useRef } from "react";
+import { useContent } from "./content-context";
 import { EASE, FadeIn } from "./ui";
 
 function Counter({ to, decimals = 0, suffix = "" }: { to: number; decimals?: number; suffix?: string }) {
@@ -22,21 +23,25 @@ function Counter({ to, decimals = 0, suffix = "" }: { to: number; decimals?: num
   return <span ref={ref}>0{suffix}</span>;
 }
 
-// Product facts only: no invented user counts or accuracy percentages.
-const STATS: { to?: number; text?: string; decimals?: number; prefix?: string; suffix?: string; label: string }[] = [
-  { text: "1.20+", label: "tylko nowe wersje gry" },
-  { to: 0.2, decimals: 1, prefix: "~", suffix: " ms", label: "średni koszt na tick" },
-  { to: 30, suffix: " s", label: "instalacja na serwerze" },
-  { text: "Discord", label: "alerty i wsparcie" },
-];
+type StatView = { to?: number; text?: string; decimals?: number; prefix?: string; suffix?: string; label: string };
+
+/** "~0,2 ms" counts up as a number with a prefix and suffix; text without a number, or with a dot like "1.20+", is shown as is. */
+function parse(value: string, label: string): StatView {
+  const m = value.match(/^([^\d.]*?)(\d+(?:,\d+)?)([^\d.]*)$/);
+  if (!m) return { text: value, label };
+  const decimals = m[2].includes(",") ? m[2].split(",")[1].length : 0;
+  return { to: Number(m[2].replace(",", ".")), decimals, prefix: m[1], suffix: m[3], label };
+}
 
 export function Stats() {
+  // Product facts only: no invented user counts or accuracy percentages. Edited in the CMS.
+  const STATS = useContent("home").stats.map((s) => parse(s.value, s.label));
   return (
     <section className="px-4 pb-6 pt-8 sm:px-6" aria-label="FraudGuard w liczbach">
       <div className="mx-auto max-w-[1200px]">
         <div className="grid grid-cols-2 gap-y-10 lg:grid-cols-4">
           {STATS.map((s, i) => (
-            <FadeIn key={s.label} delay={i * 0.06} className={`px-2 text-center ${i % 2 ? "border-l border-line" : ""} ${i === 2 ? "lg:border-l" : ""}`}>
+            <FadeIn key={s.label + i} delay={i * 0.06} className={`px-2 text-center ${i % 2 ? "border-l border-line" : ""} ${i === 2 ? "lg:border-l" : ""}`}>
               <div className="text-fg whitespace-nowrap text-[clamp(26px,3.2vw,42px)] font-medium leading-none tracking-[-0.04em]">
                 {s.to !== undefined ? (
                   <>

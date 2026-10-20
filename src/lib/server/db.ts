@@ -35,13 +35,13 @@ const SCHEMA = [
     created_at timestamptz not null default now()
   )`,
   `create index if not exists sessions_user_id on sessions (user_id)`,
-  // Integration settings (Resend, Stripe, Discord), each value encrypted with APP_SECRET.
+  // Integration settings (Resend, Discord) encrypted with APP_SECRET, plus public site settings.
   `create table if not exists settings (
     key text primary key,
     value text not null,
     updated_at timestamptz not null default now()
   )`,
-  // One row per Stripe Checkout. Amounts in grosze.
+  // Purchases are paid on Discord and entered by an admin. Amounts in grosze.
   `create table if not exists purchases (
     id text primary key,
     user_id text not null references users(id) on delete cascade,
@@ -50,12 +50,10 @@ const SCHEMA = [
     billing text not null,
     amount int not null,
     currency text not null default 'pln',
-    status text not null default 'pending',
-    stripe_session_id text unique,
-    stripe_subscription_id text,
-    stripe_customer_id text,
-    created_at timestamptz not null default now(),
-    paid_at timestamptz
+    status text not null default 'paid',
+    note text,
+    created_by text,
+    created_at timestamptz not null default now()
   )`,
   `create index if not exists purchases_user_id on purchases (user_id)`,
   `create table if not exists licenses (
@@ -102,8 +100,10 @@ async function connect(): Promise<Query> {
     if (process.env.VERCEL) throw new Error("DATABASE_URL is not set. Connect a Postgres database (e.g. Neon) in the Vercel project.");
     const { PGlite } = await import("@electric-sql/pglite");
     const { mkdir } = await import("node:fs/promises");
-    await mkdir(".data", { recursive: true });
-    const pg = new PGlite(".data/pglite");
+    // PGLITE_DIR lets a second local server use its own copy (one process per folder).
+    const dir = process.env.PGLITE_DIR || ".data/pglite";
+    await mkdir(dir.split("/").slice(0, -1).join("/") || ".", { recursive: true });
+    const pg = new PGlite(dir);
     query = async <T extends Row>(text: string, params: unknown[] = []) => (await pg.query<T>(text, params)).rows;
   }
 

@@ -2,12 +2,14 @@
 
 import { motion, useScroll, useSpring, useTransform } from "motion/react";
 import { useRef } from "react";
+import { useContent } from "./content-context";
 import { useScrollTo } from "./nav";
 import { Panel, Scaled } from "./panel";
 import { Arrow, Badge, Button, EASE, SplitReveal } from "./ui";
 
 export function Hero() {
   const scrollTo = useScrollTo();
+  const { hero } = useContent("home");
   const stage = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: stage, offset: ["start end", "start 0.25"] });
   const p = useSpring(scrollYProgress, { stiffness: 90, damping: 24, mass: 0.4 });
@@ -48,11 +50,11 @@ export function Hero() {
                 <span className="absolute inset-0 animate-ping rounded-full bg-bg/60" />
                 <span className="relative size-1.5 rounded-full bg-bg" />
               </span>
-              2.0
+              {hero.badgeTag}
             </span>
             <span className="text-muted transition-colors group-hover:text-fg">
-              <span className="sm:hidden">Nowy silnik detekcji</span>
-              <span className="hidden sm:inline">Nowy silnik detekcji jest już dostępny</span>
+              <span className="sm:hidden">{hero.badgeShort}</span>
+              <span className="hidden sm:inline">{hero.badgeLong}</span>
             </span>
             <Arrow className="size-3 text-muted transition-transform duration-500 ease-out-expo group-hover:translate-x-0.5 group-hover:text-fg" />
           </Badge>
@@ -62,21 +64,20 @@ export function Hero() {
           as="h1"
           play
           delay={0.2}
-          segments={["Cheaterzy nie mają", "\n", { text: "żadnych szans.", className: "text-white/45" }]}
+          segments={[hero.title1, "\n", { text: hero.title2, className: "text-white/45" }]}
           className="text-fg pb-2 text-[clamp(34px,7.2vw,92px)] font-medium leading-[1] tracking-[-0.045em]"
         />
 
         <motion.p {...fadeUp(0.55)} className="mt-6 max-w-[540px] text-[clamp(16px,1.35vw,19px)] leading-relaxed text-muted">
-          Anticheat dla serwerów Minecraft, który analizuje każdy pakiet w czasie rzeczywistym.
-          Wrzucasz plugin, restartujesz serwer i masz spokój.
+          {hero.lead}
         </motion.p>
 
         <motion.div {...fadeUp(0.7)} className="mt-10 flex flex-wrap items-center justify-center gap-3">
           <Button href="/rejestracja" arrow>
-            Zacznij teraz
+            {hero.primaryCta}
           </Button>
           <Button variant="secondary" onClick={() => scrollTo("#pricing")} href="#pricing">
-            Zobacz cennik
+            {hero.secondaryCta}
           </Button>
         </motion.div>
       </motion.div>

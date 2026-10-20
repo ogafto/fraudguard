@@ -3,6 +3,10 @@ import { Geist_Mono, Pixelify_Sans } from "next/font/google";
 import "lenis/dist/lenis.css";
 import "./globals.css";
 import { Providers } from "@/components/providers";
+import { ContentProvider } from "@/components/content-context";
+import { SiteProvider } from "@/components/site-context";
+import { getPublishedContent } from "@/lib/server/content";
+import { getSiteSettings } from "@/lib/server/site-settings";
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -32,7 +36,8 @@ export const viewport: Viewport = {
   themeColor: "#08090a",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const [site, home, pricing, faq] = await Promise.all([getSiteSettings(), getPublishedContent("home"), getPublishedContent("pricing"), getPublishedContent("faq")]);
   return (
     <html lang="pl" className={`${geistMono.variable} ${pixel.variable} antialiased`}>
       <head>
@@ -41,7 +46,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" />
       </head>
       <body>
-        <Providers>{children}</Providers>
+        <SiteProvider value={site}>
+          <ContentProvider value={{ home, pricing, faq }}>
+            <Providers>{children}</Providers>
+          </ContentProvider>
+        </SiteProvider>
       </body>
     </html>
   );

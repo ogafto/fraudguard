@@ -3,11 +3,12 @@
 import { useLenis } from "lenis/react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
-import { LEGAL_DOCS, type LegalDoc } from "@/lib/legal";
-import { SITE } from "@/lib/site";
+import { PRIVACY, TERMS, type LegalDoc } from "@/lib/legal";
+import { useContent } from "./content-context";
 import { Footer } from "./footer";
 import { IconDiscord } from "./icons";
 import { Nav } from "./nav";
+import { useSite } from "./site-context";
 import { EASE, Eyebrow, FadeIn, SplitReveal } from "./ui";
 
 /** Section of the current document that is under the top third of the screen. */
@@ -97,8 +98,16 @@ function Body({ doc }: { doc: LegalDoc }) {
 
 export function LegalView({ initial }: { initial: LegalDoc["key"] }) {
   const [key, setKey] = useState(initial);
+  // Texts come from the CMS; the key, label and address stay fixed.
+  const terms = useContent("terms");
+  const privacy = useContent("privacy");
+  const LEGAL_DOCS: LegalDoc[] = [
+    { ...TERMS, ...terms },
+    { ...PRIVACY, ...privacy },
+  ];
   const doc = LEGAL_DOCS.find((d) => d.key === key)!;
   const lenis = useLenis();
+  const { discordUrl } = useSite();
 
   useEffect(() => {
     document.title = `${doc.title} | FraudGuard`;
@@ -200,7 +209,7 @@ export function LegalView({ initial }: { initial: LegalDoc["key"] }) {
 
             <FadeIn className="mt-4">
               <a
-                href={SITE.discordUrl}
+                href={discordUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group flex items-center justify-between gap-4 rounded-2xl bg-white/[0.02] p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.07)] transition-colors duration-500 hover:bg-white/[0.04] sm:p-8"

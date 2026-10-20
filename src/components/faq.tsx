@@ -2,44 +2,20 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
+import { useContent } from "./content-context";
 import { EASE, Reveal, SectionHeading } from "./ui";
 
-const FAQ = [
-  {
-    q: "Na jakich wersjach Minecrafta działa FraudGuard?",
-    a: "Od 1.20 wzwyż, na silnikach Paper, Spigot, Purpur i Folia. Skupiamy się tylko na nowych wersjach, dzięki czemu checki są dokładniejsze.",
-  },
-  {
-    q: "Czy anticheat będzie banował uczciwych graczy?",
-    a: "Każdy check jest kalibrowany pod lagi, ping i nietypowe sytuacje jak knockback, lód czy slime. Kary działają progowo, więc zanim dojdzie do bana, gracz musi wielokrotnie i jednoznacznie łamać zasady.",
-  },
-  {
-    q: "Jak duży jest wpływ na wydajność serwera?",
-    a: "Średnio około 0.2 ms na tick. Analiza pakietów odbywa się asynchronicznie, poza głównym wątkiem serwera.",
-  },
-  {
-    q: "Na ilu serwerach mogę używać licencji?",
-    a: "Starter obejmuje jeden serwer, Pro do trzech, a Network nie ma limitu. Plan zmienisz w panelu klienta.",
-  },
-  {
-    q: "Czy działa na sieci z Velocity lub BungeeCord?",
-    a: "Tak. W planie Network flagi i kary są synchronizowane między wszystkimi serwerami w sieci.",
-  },
-  {
-    q: "Jak wygląda wsparcie?",
-    a: "Zespół odpowiada na Discordzie. W planach Pro i Network masz priorytet w kolejce.",
-  },
-];
-
 export function Faq() {
+  const copy = useContent("faq");
+  const FAQ = copy.items;
   const [open, setOpen] = useState<number | null>(0);
 
   return (
     <section id="faq" className="relative px-4 py-28 sm:px-6 md:py-36">
       <div className="mx-auto grid max-w-[1200px] gap-12 lg:grid-cols-[0.8fr_1.2fr]">
         <div className="lg:sticky lg:top-32 lg:self-start">
-          <SectionHeading eyebrow="FAQ" title={["Częste", "\n", "pytania."]}>
-            Nie ma tu Twojego pytania? Zapytaj na Discordzie, odpowiadamy zwykle w kilka godzin.
+          <SectionHeading eyebrow={copy.eyebrow} title={[copy.title1, "\n", copy.title2]}>
+            {copy.intro}
           </SectionHeading>
         </div>
 
@@ -47,7 +23,7 @@ export function Faq() {
           {FAQ.map((item, i) => {
             const on = open === i;
             return (
-              <Reveal key={item.q} from="up" distance={24} delay={i * 0.06}>
+              <Reveal key={i} from="up" distance={24} delay={i * 0.06}>
                 <li
                   className={`rounded-xl transition-[background-color,box-shadow] duration-300 ${on ? "bg-white/[0.035] shadow-[0_0_0_1px_rgba(255,255,255,0.09)]" : "shadow-[0_0_0_1px_rgba(255,255,255,0.05)] hover:bg-white/[0.02]"}`}
                 >

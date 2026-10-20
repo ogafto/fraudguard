@@ -7,8 +7,8 @@ import { redirect } from "next/navigation";
 import type { AuthResult } from "./auth";
 import { randomCode, randomToken, sha256, safeEqual, hashPassword, verifyPassword, dummyHash } from "./server/crypto";
 import { db } from "./server/db";
-import { resetMail, sendMail, verificationMail } from "./server/mail";
-import { createSession, destroySession } from "./server/session";
+import { MailNotConfiguredError, resetMail, sendMail, verificationMail } from "./server/mail";
+import { createSession, destroySession, isAdminEmail } from "./server/session";
 
 type Purpose = "verify" | "reset";
 type UserRow = { id: string; nick: string; email: string; password_hash: string; email_verified_at: string | null };
@@ -23,6 +23,26 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const fail = (error: string): AuthResult => ({ ok: false, error });
 const MAIL_FAILED = fail("Nie udało się wysłać wiadomości. Spróbuj ponownie za chwilę.");
+const MAIL_OFF = fail("Wysyłka e-maili nie jest jeszcze włączona, więc nie możemy wysłać kodu. Napisz do nas na Discordzie.");
+
+/**
+ * Sends the email and returns null, or the error to show. Without Resend connected, addresses from
+ * ADMIN_EMAILS get their message in the server log instead, so the first admin can sign in and connect it.
+ */
+async function deliver(mail: Parameters<typeof sendMail>[0]): Promise<AuthResult | null> {
+  try {
+    await sendMail(mail);
+    return null;
+  } catch (e) {
+    if (e instanceof MailNotConfiguredError) {
+      if (!isAdminEmail(mail.to)) return MAIL_OFF;
+      console.warn(`\n[auth] Resend nie jest podpięty. Wiadomość dla administratora ${mail.to}:\n${mail.text}\n`);
+      return null;
+    }
+    console.error("[auth] mail failed", e);
+    return MAIL_FAILED;
+  }
+}
 
 const normEmail = (email: unknown) => (typeof email === "string" ? email.trim().toLowerCase() : "");
 const str = (v: unknown) => (typeof v === "string" ? v : "");
@@ -69,7 +89,7 @@ async function issue(userId: string, purpose: Purpose, minutes: number) {
 async function sendVerification(user: Pick<UserRow, "id" | "nick" | "email">) {
   const { code, token } = await issue(user.id, "verify", CODE_MINUTES);
   const link = `${await origin()}/weryfikacja?token=${encodeURIComponent(token)}`;
-  await sendMail(verificationMail(user.email, user.nick, code!, link));
+  return deliver(verificationMail(user.email, user.nick, code!, link));
 }
 
 async function markVerified(userId: string) {
@@ -115,12 +135,8 @@ export async function register(data: { nick: string; email: string; password: st
     if (saved.id !== user.id) return fail("Konto z tym adresem e-mail już istnieje. Zaloguj się.");
   }
 
-  try {
-    await sendVerification(user);
-  } catch (e) {
-    console.error("[auth] verification mail failed", e);
-    return MAIL_FAILED;
-  }
+  const failed = await sendVerification(user);
+  if (failed) return failed;
   return { ok: true };
 }
 
@@ -161,12 +177,8 @@ export async function resendCode(email: string): Promise<AuthResult> {
   const user = await findUser(normEmail(email));
   // Same answer whether or not the address has an account.
   if (!user || user.email_verified_at || (await tooSoon(user.id, "verify"))) return { ok: true };
-  try {
-    await sendVerification(user);
-  } catch (e) {
-    console.error("[auth] verification mail failed", e);
-    return MAIL_FAILED;
-  }
+  const failed = await sendVerification(user);
+  if (failed) return failed;
   return { ok: true };
 }
 
@@ -179,12 +191,8 @@ export async function login(email: string, password: string): Promise<AuthResult
   if (!user.email_verified_at) {
     // Password is right but the address was never confirmed: send a code and show the code screen.
     if (!(await tooSoon(user.id, "verify"))) {
-      try {
-        await sendVerification(user);
-      } catch (e) {
-        console.error("[auth] verification mail failed", e);
-        return MAIL_FAILED;
-      }
+      const failed = await sendVerification(user);
+      if (failed) return failed;
     }
     return { ok: false, error: "Najpierw potwierdź adres e-mail.", next: "verify" };
   }
@@ -199,14 +207,8 @@ export async function requestPasswordReset(email: string): Promise<AuthResult> {
   const user = await findUser(address);
   // Same answer whether or not the address has an account.
   if (!user || (await tooSoon(user.id, "reset"))) return { ok: true };
-  try {
-    const { token } = await issue(user.id, "reset", RESET_MINUTES);
-    await sendMail(resetMail(user.email, user.nick, `${await origin()}/nowe-haslo?token=${encodeURIComponent(token)}`));
-  } catch (e) {
-    console.error("[auth] reset mail failed", e);
-    return MAIL_FAILED;
-  }
-  return { ok: true };
+  const { token } = await issue(user.id, "reset", RESET_MINUTES);
+  return (await deliver(resetMail(user.email, user.nick, `${await origin()}/nowe-haslo?token=${encodeURIComponent(token)}`))) ?? { ok: true };
 }
 
 export async function resetPassword(token: string, password: string): Promise<AuthResult> {

@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion, useInView } from "motion/react";
 import { useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
+import { useContent } from "../content-context";
 import { IconDiscord } from "../icons";
 import { FEATURE_EVENT } from "../nav";
 import { McItem } from "../mc-ui";
@@ -19,7 +20,7 @@ type Feature = {
 
 const ICON = "size-4 shrink-0";
 
-const FEATURES: Feature[] = [
+const BASE: Feature[] = [
   {
     tab: "Alerty",
     icon: <McItem name="sword" className={ICON} />,
@@ -74,6 +75,9 @@ function Playing({ Demo }: { Demo: ComponentType<DemoProps> }) {
 }
 
 export function FeaturesV2() {
+  const copy = useContent("home").features;
+  // Texts come from the CMS; each tab keeps its icon and demo by position.
+  const FEATURES = BASE.map((b, i) => ({ ...b, ...copy.items[i] }));
   const [active, setActive] = useState(0);
   const box = useRef<HTMLDivElement>(null);
   const seen = useInView(box, { once: true, margin: "-20% 0px" });
@@ -96,15 +100,15 @@ export function FeaturesV2() {
       window.removeEventListener(FEATURE_EVENT, onEvent);
       clearTimeout(id);
     };
-  }, []);
+  }, [FEATURES.length]);
 
   return (
     <section id="features" className="relative px-4 py-28 sm:px-6 md:py-40">
       <div className="mx-auto max-w-[1200px]">
         <div className="grid items-end gap-8 md:grid-cols-[1fr_auto]">
-          <SectionHeading eyebrow="Funkcje" title={["Tak wygląda", "\n", "FraudGuard w akcji."]} />
+          <SectionHeading eyebrow={copy.eyebrow} title={[copy.title1, "\n", copy.title2]} />
           <FadeIn delay={0.15} className="max-w-[340px] text-[16px] leading-relaxed text-muted">
-            Wszystko, czego Twoja administracja używa na co dzień. W grze, na Discordzie i w panelu.
+            {copy.intro}
           </FadeIn>
         </div>
 
@@ -116,7 +120,7 @@ export function FeaturesV2() {
           >
             {FEATURES.map((x, i) => (
               <button
-                key={x.tab}
+                key={i}
                 role="tab"
                 aria-selected={active === i}
                 onClick={() => setActive(i)}
@@ -149,7 +153,7 @@ export function FeaturesV2() {
               <div className="grid p-6 sm:p-10">
                 {FEATURES.map((x, i) => (
                   <motion.div
-                    key={x.tab}
+                    key={i}
                     aria-hidden={i !== active}
                     className={`flex flex-col [grid-area:1/1] lg:justify-center ${i === active ? "" : "pointer-events-none"}`}
                     initial={false}
@@ -159,8 +163,8 @@ export function FeaturesV2() {
                     <h3 className="text-[clamp(26px,3vw,40px)] font-medium leading-[1.08] tracking-[-0.04em]">{x.title}</h3>
                     <p className="mt-4 max-w-[440px] text-[15.5px] leading-relaxed text-muted sm:text-[16.5px]">{x.body}</p>
                     <ul className="mt-6 space-y-3 sm:mt-8">
-                      {x.points.map((pt) => (
-                        <li key={pt} className="flex items-center gap-3 text-[15px] text-fg/85">
+                      {x.points.map((pt, k) => (
+                        <li key={k} className="flex items-center gap-3 text-[15px] text-fg/85">
                           <svg viewBox="0 0 16 16" className="size-4 shrink-0" fill="none" aria-hidden>
                             <path d="m4 8.5 2.5 2.5L12 5.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>

@@ -12,6 +12,7 @@ import {
   IconGrid,
   IconKey,
   IconLogout,
+  IconLogs,
   IconServer,
   IconSliders,
   IconTicket,
@@ -55,8 +56,13 @@ const NAV: Record<"client" | "admin", { label: string; items: NavItem[] }[]> = {
       items: [
         { label: "Przegląd", href: "/admin", Icon: IconChart },
         { label: "Klienci", href: "/admin/klienci", Icon: IconUsers },
+        { label: "Zakupy", href: "/admin/zakupy", Icon: IconCard },
         { label: "Licencje", href: "/admin/licencje", Icon: IconKey },
       ],
+    },
+    {
+      label: "Strona",
+      items: [{ label: "Treści", href: "/admin/tresci", Icon: IconLogs }],
     },
     {
       label: "Produkt",
@@ -64,6 +70,10 @@ const NAV: Record<"client" | "admin", { label: string; items: NavItem[] }[]> = {
         { label: "Wydania", href: "/admin/wydania", Icon: IconBox },
         { label: "Zgłoszenia", href: "/admin/zgloszenia", Icon: IconTicket, badge: "2" },
       ],
+    },
+    {
+      label: "System",
+      items: [{ label: "Integracje", href: "/admin/integracje", Icon: IconCog }],
     },
   ],
 };

@@ -1,26 +1,45 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
-import { ADMIN_LICENSES } from "@/lib/mock";
-import { IconPlus } from "../../icons";
-import { EASE } from "../../ui";
+import { useState, useTransition } from "react";
+import { createLicenseAction, extendLicenseAction, setLicenseStatusAction } from "@/lib/admin-actions";
+import type { Plan } from "@/lib/content";
+import type { AdminLicense } from "@/lib/server/admin-data";
+import { IconPlus, IconSearch } from "../../icons";
 import { Block, Input, PageHeader, Pill, Table, Td } from "../ui";
+import { BILLING_LABEL, Btn, date, KeyBox, Label, Modal, NoticeBar, RowAction, Select, type Notice } from "./kit";
 
-export function AdminLicenses() {
+function state(l: AdminLicense) {
+  if (l.status === "suspended") return { label: "wstrzymana", tone: "warn" as const };
+  if (l.expired) return { label: "wygasła", tone: "default" as const };
+  return { label: "aktywna", tone: "ok" as const };
+}
+
+export function AdminLicenses({ licenses, plans, emails }: { licenses: AdminLicense[]; plans: Plan[]; emails: string[] }) {
   const [open, setOpen] = useState(false);
   const [created, setCreated] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [planId, setPlanId] = useState(plans[0]?.id ?? "");
+  const [billing, setBilling] = useState<"monthly" | "lifetime">("lifetime");
+  const [formNotice, setFormNotice] = useState<Notice>(null);
+  const [notice, setNotice] = useState<Notice>(null);
+  const [q, setQ] = useState("");
+  const [busy, start] = useTransition();
+
+  const rows = licenses.filter((l) => `${l.key} ${l.nick ?? ""} ${l.email ?? ""} ${l.planName}`.toLowerCase().includes(q.trim().toLowerCase()));
+  const active = licenses.filter((l) => state(l).label === "aktywna").length;
 
   return (
     <>
       <PageHeader
         title="Licencje"
-        desc="Wszystkie klucze licencyjne i ich stan."
+        desc={`${active} aktywnych z ${licenses.length}. Licencje z zakupów tworzą się same.`}
         actions={
           <button
             onClick={() => {
               setOpen(true);
               setCreated(null);
+              setFormNotice(null);
+              setEmail("");
             }}
             className="inline-flex h-8 items-center gap-1.5 rounded-full bg-fg px-3.5 text-[13px] font-medium text-bg transition-colors hover:bg-[#e4e5e7]"
           >
@@ -29,89 +48,110 @@ export function AdminLicenses() {
           </button>
         }
       />
+      <NoticeBar notice={notice} className="mb-4" />
       <Block pad={false}>
-        <Table head={["Klucz", "Właściciel", "Plan", "Serwery", "Ważna do", "Status", ""]}>
-          {ADMIN_LICENSES.map((l) => (
-            <tr key={l.key}>
-              <Td className="font-mono text-[12.5px]">{l.key}</Td>
-              <Td>{l.owner}</Td>
-              <Td className="text-muted">{l.plan}</Td>
-              <Td className="font-mono text-[12.5px] text-muted">{l.servers}</Td>
-              <Td className="text-muted">{l.expires}</Td>
-              <Td>
-                <Pill tone={l.status === "aktywna" ? "ok" : l.status === "wstrzymana" ? "warn" : "default"}>{l.status}</Pill>
-              </Td>
-              <Td right>
-                <button className="text-[13px] text-muted transition-colors hover:text-fg">Zarządzaj</button>
-              </Td>
-            </tr>
-          ))}
+        <div className="border-b border-line p-4">
+          <div className="relative w-full sm:w-72">
+            <IconSearch className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-dim" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Szukaj po kluczu lub kliencie…" className="w-full pl-8" />
+          </div>
+        </div>
+        <Table head={["Klucz", "Właściciel", "Plan", "Ważna do", "Status", ""]}>
+          {rows.map((l) => {
+            const s = state(l);
+            return (
+              <tr key={l.id}>
+                <Td className="font-mono text-[12.5px]">{l.key}</Td>
+                <Td>{l.nick ? <span>{l.nick}</span> : <span className="text-dim">bez właściciela</span>}</Td>
+                <Td className="text-muted">
+                  {l.planName} · {BILLING_LABEL[l.billing]}
+                </Td>
+                <Td className="text-muted">{date(l.expiresAt)}</Td>
+                <Td>
+                  <Pill tone={s.tone}>{s.label}</Pill>
+                </Td>
+                <Td right>
+                  <span className="inline-flex gap-4">
+                    {l.billing === "monthly" && (
+                      <RowAction disabled={busy} onClick={() => start(async () => setNotice(await extendLicenseAction(l.id)))}>
+                        +30 dni
+                      </RowAction>
+                    )}
+                    <RowAction
+                      disabled={busy}
+                      onClick={() => start(async () => setNotice(await setLicenseStatusAction(l.id, l.status === "active" ? "suspended" : "active")))}
+                    >
+                      {l.status === "active" ? "Wstrzymaj" : "Aktywuj"}
+                    </RowAction>
+                  </span>
+                </Td>
+              </tr>
+            );
+          })}
         </Table>
+        {rows.length === 0 && <p className="px-5 py-10 text-center text-[14px] text-dim">{licenses.length ? "Nic nie pasuje do wyszukiwania." : "Brak licencji."}</p>}
       </Block>
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setOpen(false)}
+      <Modal open={open} onClose={() => setOpen(false)} title="Nowa licencja">
+        {created ? (
+          <>
+            <p className="mt-2 text-[14px] text-muted">Licencja utworzona. Kliknij klucz, żeby go skopiować.</p>
+            <KeyBox value={created} />
+            <div className="mt-6 flex justify-end">
+              <Btn primary onClick={() => setOpen(false)}>
+                Gotowe
+              </Btn>
+            </div>
+          </>
+        ) : (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              start(async () => {
+                const res = await createLicenseAction({ email, planId, billing });
+                if (res.ok) {
+                  setCreated(res.licenseKey ?? null);
+                  setNotice(res);
+                } else setFormNotice(res);
+              });
+            }}
           >
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              transition={{ duration: 0.35, ease: EASE }}
-              onClick={(e) => e.stopPropagation()}
-              className="card w-full max-w-[440px] bg-panel p-6"
-            >
-              <h3 className="text-[18px] font-medium">Nowa licencja</h3>
-              {created ? (
-                <>
-                  <p className="mt-2 text-[14px] text-muted">Licencja utworzona. Skopiuj klucz i wyślij go klientowi.</p>
-                  <code className="mt-4 block rounded-lg bg-white/[0.04] px-3 py-2.5 font-mono text-[14px] shadow-[0_0_0_1px_rgba(255,255,255,0.08)]">{created}</code>
-                  <div className="mt-6 flex justify-end">
-                    <button onClick={() => setOpen(false)} className="h-9 rounded-full bg-fg px-4 text-[13.5px] font-medium text-bg hover:bg-[#e4e5e7]">
-                      Gotowe
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="mt-5 space-y-4">
-                    <label className="block">
-                      <span className="mb-1.5 block text-[13px] text-muted">E-mail klienta</span>
-                      <Input placeholder="admin@serwer.pl" className="w-full" />
-                    </label>
-                    <label className="block">
-                      <span className="mb-1.5 block text-[13px] text-muted">Plan</span>
-                      <select className="h-9 w-full rounded-lg bg-white/[0.03] px-3 text-[13.5px] shadow-[0_0_0_1px_rgba(255,255,255,0.08)] outline-none">
-                        {["Starter", "Pro", "Network", "Lifetime Pro"].map((p) => (
-                          <option key={p} className="bg-panel">
-                            {p}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-                  <div className="mt-6 flex justify-end gap-2">
-                    <button onClick={() => setOpen(false)} className="h-9 rounded-full px-4 text-[13.5px] text-muted hover:text-fg">
-                      Anuluj
-                    </button>
-                    <button
-                      onClick={() => setCreated("FG-N3W1-K8YP-QQ20-ZX7M")}
-                      className="h-9 rounded-full bg-fg px-4 text-[13.5px] font-medium text-bg hover:bg-[#e4e5e7]"
-                    >
-                      Wygeneruj
-                    </button>
-                  </div>
-                </>
-              )}
-            </motion.div>
-          </motion.div>
+            <p className="mt-2 text-[14px] leading-relaxed text-muted">Na przykład licencja testowa albo prezent. Bez zakupu, więc nie liczy się do przychodu.</p>
+            <div className="mt-5 space-y-4">
+              <Label label="E-mail klienta" hint="Opcjonalnie. Bez adresu licencja nie ma właściciela.">
+                <Input value={email} onChange={(e) => setEmail(e.target.value)} list="license-emails" type="email" placeholder="gracz@serwer.pl" className="w-full" />
+                <datalist id="license-emails">
+                  {emails.map((e) => (
+                    <option key={e} value={e} />
+                  ))}
+                </datalist>
+              </Label>
+              <div className="grid grid-cols-2 gap-3">
+                <Label label="Plan">
+                  <Select value={planId} onChange={setPlanId} options={plans.map((p) => ({ value: p.id, label: p.name }))} />
+                </Label>
+                <Label label="Okres">
+                  <Select
+                    value={billing}
+                    onChange={(v) => setBilling(v as "monthly" | "lifetime")}
+                    options={[
+                      { value: "lifetime", label: "Dożywotnio" },
+                      { value: "monthly", label: "30 dni" },
+                    ]}
+                  />
+                </Label>
+              </div>
+            </div>
+            <NoticeBar notice={formNotice} />
+            <div className="mt-6 flex justify-end gap-2">
+              <Btn onClick={() => setOpen(false)}>Anuluj</Btn>
+              <Btn primary type="submit" busy={busy}>
+                Wygeneruj
+              </Btn>
+            </div>
+          </form>
         )}
-      </AnimatePresence>
+      </Modal>
     </>
   );
 }

@@ -2,44 +2,29 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
+import { IconDiscord } from "../icons";
 import { Odometer } from "../odometer";
+import { useContent } from "../content-context";
+import { useSite } from "../site-context";
 import { Button, EASE, FadeIn, Reveal, SectionHeading } from "../ui";
 
 type Billing = "monthly" | "lifetime";
 
-const PLANS: { name: string; who: string; price: Record<Billing, number>; featured?: boolean; lead?: string; features: string[] }[] = [
-  {
-    name: "Starter",
-    who: "Jeden serwer, który chce spokoju od pierwszego dnia.",
-    price: { monthly: 29, lifetime: 149 },
-    features: ["1 serwer", "Alerty w grze i komendy", "Menu podglądu gracza", "Aktualizacje"],
-  },
-  {
-    name: "Pro",
-    who: "Rosnąca społeczność z kilkoma trybami gry.",
-    price: { monthly: 59, lifetime: 299 },
-    featured: true,
-    lead: "Wszystko ze Startera, plus",
-    features: ["Do 3 serwerów", "Panel webowy i statystyki", "Alerty na Discordzie", "Historia zmian konfiguracji", "Priorytetowe wsparcie"],
-  },
-  {
-    name: "Network",
-    who: "Sieć serwerów z proxy i własnymi wymaganiami.",
-    price: { monthly: 129, lifetime: 599 },
-    lead: "Wszystko z Pro, plus",
-    features: ["Bez limitu serwerów", "Synchronizacja proxy", "Dedykowany opiekun"],
-  },
-];
+const COLS: Record<number, string> = { 1: "md:mx-auto md:max-w-[420px]", 2: "md:grid-cols-2", 3: "md:grid-cols-3", 4: "md:grid-cols-4" };
 
 export function PricingV2() {
   const [billing, setBilling] = useState<Billing>("monthly");
-  const [hover, setHover] = useState(1);
+  const copy = useContent("pricing");
+  const PLANS = copy.plans;
+  const [hover, setHover] = useState(() => Math.max(0, PLANS.findIndex((p) => p.featured)));
+  const rest = Math.max(0, PLANS.findIndex((p) => p.featured));
+  const { discordUrl } = useSite();
 
   return (
     <section id="pricing" className="relative px-4 py-32 sm:px-6 md:py-44">
       <div className="mx-auto max-w-[1200px]">
         <div className="grid items-end gap-8 md:grid-cols-[1fr_auto]">
-          <SectionHeading eyebrow="Cennik" title={["Prosty cennik.", "\n", "Bez niespodzianek."]} />
+          <SectionHeading eyebrow={copy.eyebrow} title={[copy.title1, "\n", copy.title2]} />
           <FadeIn delay={0.15}>
             <div className="flex w-max rounded-full bg-white/[0.03] p-1 shadow-[0_0_0_1px_rgba(255,255,255,0.08)]">
               {(["monthly", "lifetime"] as const).map((b) => (
@@ -51,7 +36,7 @@ export function PricingV2() {
                   {billing === b && (
                     <motion.span layoutId="billing-v3" className="absolute inset-0 rounded-full bg-fg" transition={{ type: "spring", stiffness: 420, damping: 34 }} />
                   )}
-                  <span className="relative">{b === "monthly" ? "Miesięcznie" : "Dożywotnio"}</span>
+                  <span className="relative">{b === "monthly" ? copy.monthlyLabel : copy.lifetimeLabel}</span>
                 </button>
               ))}
             </div>
@@ -60,12 +45,12 @@ export function PricingV2() {
 
         <Reveal from="up" distance={50} delay={0.1} className="mt-16">
           <div
-            className="relative grid overflow-hidden rounded-[24px] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_0_1px_rgba(255,255,255,0.08)] md:grid-cols-3"
-            onPointerLeave={() => setHover(1)}
+            className={`relative grid overflow-hidden rounded-[24px] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_0_1px_rgba(255,255,255,0.08)] ${COLS[PLANS.length] ?? "md:grid-cols-3"}`}
+            onPointerLeave={() => setHover(rest)}
           >
             {PLANS.map((p, i) => (
               <div
-                key={p.name}
+                key={p.id + i}
                 onPointerEnter={() => setHover(i)}
                 className={`relative flex flex-col p-8 sm:p-10 ${i > 0 ? "border-t border-line md:border-l md:border-t-0" : ""}`}
               >
@@ -82,26 +67,26 @@ export function PricingV2() {
 
                 <div className="relative flex h-6 items-center justify-between">
                   <span className="text-[15px] font-medium">{p.name}</span>
-                  {p.featured && <span className="text-[12.5px] text-muted">Najczęściej wybierany</span>}
+                  {p.featured && <span className="text-[12.5px] text-muted">{copy.featuredBadge}</span>}
                 </div>
                 <p className="relative mt-3 min-h-[48px] text-[15px] leading-relaxed text-muted">{p.who}</p>
 
                 <div className="relative mt-10 flex items-end gap-2">
                   <span className="text-[clamp(52px,5vw,72px)] font-medium leading-none tracking-[-0.055em]">
-                    <Odometer value={p.price[billing]} />
+                    <Odometer value={billing === "monthly" ? p.monthly : p.lifetime} />
                   </span>
                   <span className="mb-1.5 text-[14px] text-muted">zł</span>
                 </div>
                 <div className="relative mt-2 h-5 text-[13.5px] text-dim">
                   <AnimatePresence mode="wait" initial={false}>
                     <motion.span key={billing} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} transition={{ duration: 0.2 }} className="block">
-                      {billing === "monthly" ? "miesięcznie, anulujesz kiedy chcesz" : "jednorazowo, na zawsze"}
+                      {billing === "monthly" ? copy.monthlyNote : copy.lifetimeNote}
                     </motion.span>
                   </AnimatePresence>
                 </div>
 
-                <Button href="/rejestracja" variant={p.featured ? "primary" : "secondary"} arrow className="relative mt-10 w-full">
-                  Wybierz {p.name}
+                <Button href={discordUrl} external variant={p.featured ? "primary" : "secondary"} arrow className="relative mt-10 w-full">
+                  {copy.buttonPrefix} {p.name}
                 </Button>
 
                 <div className="relative mt-10 border-t border-line pt-8">
@@ -109,7 +94,7 @@ export function PricingV2() {
                   <ul className="space-y-3.5">
                     {p.features.map((f, k) => (
                       <motion.li
-                        key={f}
+                        key={k}
                         initial={{ opacity: 0, x: -8 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
@@ -128,6 +113,18 @@ export function PricingV2() {
             ))}
           </div>
         </Reveal>
+
+        <FadeIn delay={0.2} className="mt-6 flex justify-center">
+          <a
+            href={discordUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group inline-flex items-center gap-2.5 text-center text-[14px] text-muted transition-colors hover:text-fg"
+          >
+            <IconDiscord className="size-4 shrink-0 transition-transform duration-500 ease-out-expo group-hover:-rotate-12 group-hover:scale-110" />
+            {copy.footnote}
+          </a>
+        </FadeIn>
       </div>
     </section>
   );

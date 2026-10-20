@@ -2,13 +2,16 @@
 
 import { motion, useMotionTemplate, useMotionValue, useSpring } from "motion/react";
 import type { PointerEvent } from "react";
-import { SITE } from "@/lib/site";
+import { useContent } from "../content-context";
 import { IconDiscord } from "../icons";
 import { LogoMark } from "../logo";
+import { useSite } from "../site-context";
 import { Button, EASE } from "../ui";
 
 /** Compact closing card: one line of copy and two actions. */
 export function CtaV2() {
+  const { cta } = useContent("home");
+  const { discordUrl } = useSite();
   const mx = useMotionValue(80);
   const my = useMotionValue(0);
   const sx = useSpring(mx, { stiffness: 90, damping: 20 });
@@ -47,16 +50,16 @@ export function CtaV2() {
               <LogoMark className="size-6 text-bg" />
             </motion.span>
             <div>
-              <h2 className="text-[clamp(24px,2.6vw,34px)] font-medium leading-[1.1] tracking-[-0.03em]">Gotowy, żeby pozbyć się cheaterów?</h2>
-              <p className="mt-2 text-[16px] text-muted">Załóż konto i zabezpiecz serwer jeszcze dziś.</p>
+              <h2 className="text-[clamp(24px,2.6vw,34px)] font-medium leading-[1.1] tracking-[-0.03em]">{cta.title}</h2>
+              <p className="mt-2 text-[16px] text-muted">{cta.lead}</p>
             </div>
           </div>
           <div className="flex shrink-0 flex-wrap gap-3">
             <Button href="/rejestracja" arrow>
-              Załóż konto
+              {cta.button}
             </Button>
             <a
-              href={SITE.discordUrl}
+              href={discordUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="group inline-flex h-11 items-center gap-2.5 rounded-full bg-white/[0.06] px-5 text-[14.5px] font-medium text-fg ring-1 ring-inset ring-white/[0.1] transition-colors duration-300 hover:bg-white/[0.1]"

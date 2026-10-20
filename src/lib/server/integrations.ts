@@ -2,13 +2,12 @@ import "server-only";
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 import { db } from "./db";
 
-// Integrations are connected from the admin settings page and stored in the settings table,
+// Integrations (Resend, Discord) are connected from the admin settings page and stored in the settings table,
 // encrypted with AES-256-GCM using a key derived from APP_SECRET. Environment variables still
 // work as a fallback, so a deploy can also be configured without the UI.
 
 export type Integrations = {
   resend: { apiKey: string; from: string };
-  stripe: { secretKey: string; webhookSecret: string };
   discord: { webhookUrl: string };
 };
 export type IntegrationName = keyof Integrations;
@@ -16,13 +15,11 @@ export type IntegrationName = keyof Integrations;
 /** Fields that hold secrets: never sent back to the browser, only a masked hint. */
 export const SECRET_FIELDS: Record<IntegrationName, string[]> = {
   resend: ["apiKey"],
-  stripe: ["secretKey", "webhookSecret"],
   discord: ["webhookUrl"],
 };
 
 const ENV: { [K in IntegrationName]: Record<keyof Integrations[K], string> } = {
   resend: { apiKey: "RESEND_API_KEY", from: "EMAIL_FROM" },
-  stripe: { secretKey: "STRIPE_SECRET_KEY", webhookSecret: "STRIPE_WEBHOOK_SECRET" },
   discord: { webhookUrl: "DISCORD_WEBHOOK_URL" },
 };
 
