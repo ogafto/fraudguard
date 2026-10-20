@@ -9,5 +9,5 @@ export const metadata: Metadata = { title: "Zakupy | FraudGuard Admin" };
 export default async function Page() {
   await requireAdminUser();
   const [purchases, users, pricing] = await Promise.all([listPurchases(), listUsers(), getPublishedContent("pricing")]);
-  return <AdminPurchases purchases={purchases} plans={pricing.plans} emails={users.map((u) => u.email)} />;
+  return <AdminPurchases purchases={purchases} plans={pricing.plans} users={users.map((u) => ({ email: u.email, nick: u.nick, verified: u.verified }))} />;
 }

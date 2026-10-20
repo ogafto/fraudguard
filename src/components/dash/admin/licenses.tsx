@@ -6,7 +6,8 @@ import type { Plan } from "@/lib/content";
 import type { AdminLicense } from "@/lib/server/admin-data";
 import { IconPlus, IconSearch } from "../../icons";
 import { Block, Input, PageHeader, Pill, Table, Td } from "../ui";
-import { BILLING_LABEL, Btn, date, KeyBox, Label, Modal, NoticeBar, RowAction, Select, type Notice } from "./kit";
+import { BILLING_LABEL, Btn, date, Modal, NoticeBar, RowAction, type Notice } from "./kit";
+import { BillingPicker, FieldLabel, PlanPicker, SuccessKey, UserPicker, type PickUser } from "./pickers";
 
 function state(l: AdminLicense) {
   if (l.status === "suspended") return { label: "wstrzymana", tone: "warn" as const };
@@ -14,11 +15,11 @@ function state(l: AdminLicense) {
   return { label: "aktywna", tone: "ok" as const };
 }
 
-export function AdminLicenses({ licenses, plans, emails }: { licenses: AdminLicense[]; plans: Plan[]; emails: string[] }) {
+export function AdminLicenses({ licenses, plans, users }: { licenses: AdminLicense[]; plans: Plan[]; users: PickUser[] }) {
   const [open, setOpen] = useState(false);
   const [created, setCreated] = useState<string | null>(null);
   const [email, setEmail] = useState("");
-  const [planId, setPlanId] = useState(plans[0]?.id ?? "");
+  const [planId, setPlanId] = useState(plans.find((p) => p.featured)?.id ?? plans[0]?.id ?? "");
   const [billing, setBilling] = useState<"monthly" | "lifetime">("lifetime");
   const [formNotice, setFormNotice] = useState<Notice>(null);
   const [notice, setNotice] = useState<Notice>(null);
@@ -92,19 +93,17 @@ export function AdminLicenses({ licenses, plans, emails }: { licenses: AdminLice
         {rows.length === 0 && <p className="px-5 py-10 text-center text-[14px] text-dim">{licenses.length ? "Nic nie pasuje do wyszukiwania." : "Brak licencji."}</p>}
       </Block>
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Nowa licencja">
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title={created ? "Licencja gotowa" : "Nowa licencja"}
+        desc={created ? undefined : "Na przykład licencja testowa albo prezent. Bez zakupu, więc nie liczy się do przychodu."}
+      >
         {created ? (
-          <>
-            <p className="mt-2 text-[14px] text-muted">Licencja utworzona. Kliknij klucz, żeby go skopiować.</p>
-            <KeyBox value={created} />
-            <div className="mt-6 flex justify-end">
-              <Btn primary onClick={() => setOpen(false)}>
-                Gotowe
-              </Btn>
-            </div>
-          </>
+          <SuccessKey licenseKey={created} onClose={() => setOpen(false)} text={email ? "Pakiet jest już widoczny w panelu klienta." : "Licencja nie ma właściciela. Przekaż klucz komu chcesz."} />
         ) : (
           <form
+            className="mt-6 space-y-5"
             onSubmit={(e) => {
               e.preventDefault();
               start(async () => {
@@ -116,37 +115,25 @@ export function AdminLicenses({ licenses, plans, emails }: { licenses: AdminLice
               });
             }}
           >
-            <p className="mt-2 text-[14px] leading-relaxed text-muted">Na przykład licencja testowa albo prezent. Bez zakupu, więc nie liczy się do przychodu.</p>
-            <div className="mt-5 space-y-4">
-              <Label label="E-mail klienta" hint="Opcjonalnie. Bez adresu licencja nie ma właściciela.">
-                <Input value={email} onChange={(e) => setEmail(e.target.value)} list="license-emails" type="email" placeholder="gracz@serwer.pl" className="w-full" />
-                <datalist id="license-emails">
-                  {emails.map((e) => (
-                    <option key={e} value={e} />
-                  ))}
-                </datalist>
-              </Label>
-              <div className="grid grid-cols-2 gap-3">
-                <Label label="Plan">
-                  <Select value={planId} onChange={setPlanId} options={plans.map((p) => ({ value: p.id, label: p.name }))} />
-                </Label>
-                <Label label="Okres">
-                  <Select
-                    value={billing}
-                    onChange={(v) => setBilling(v as "monthly" | "lifetime")}
-                    options={[
-                      { value: "lifetime", label: "Dożywotnio" },
-                      { value: "monthly", label: "30 dni" },
-                    ]}
-                  />
-                </Label>
-              </div>
+            <div>
+              <FieldLabel hint="opcjonalnie">Właściciel</FieldLabel>
+              <UserPicker users={users} value={email} onChange={setEmail} allowEmpty emptyLabel="Bez właściciela" />
+            </div>
+            <div>
+              <FieldLabel>Okres</FieldLabel>
+              <BillingPicker value={billing} onChange={setBilling} />
+            </div>
+            <div>
+              <FieldLabel>Pakiet</FieldLabel>
+              <PlanPicker plans={plans} value={planId} billing={billing} onChange={setPlanId} />
             </div>
             <NoticeBar notice={formNotice} />
-            <div className="mt-6 flex justify-end gap-2">
-              <Btn onClick={() => setOpen(false)}>Anuluj</Btn>
-              <Btn primary type="submit" busy={busy}>
-                Wygeneruj
+            <div className="flex gap-2 pt-1">
+              <Btn onClick={() => setOpen(false)} className="flex-1 sm:flex-none">
+                Anuluj
+              </Btn>
+              <Btn primary type="submit" busy={busy} disabled={!planId} className="flex-1">
+                Wygeneruj licencję
               </Btn>
             </div>
           </form>

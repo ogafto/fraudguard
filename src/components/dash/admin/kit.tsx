@@ -123,12 +123,12 @@ export function TextArea({ value, onChange, rows = 3, placeholder }: { value: st
   return <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={rows} placeholder={placeholder} className={`resize-y py-2 leading-relaxed ${CONTROL}`} />;
 }
 
-export function Modal({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
+export function Modal({ open, onClose, title, desc, children }: { open: boolean; onClose: () => void; title: string; desc?: string; children: ReactNode }) {
   return (
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/65 p-3 backdrop-blur-md sm:items-center sm:p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -137,15 +137,32 @@ export function Modal({ open, onClose, title, children }: { open: boolean; onClo
           <motion.div
             role="dialog"
             aria-label={title}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            transition={{ duration: 0.35, ease: EASE }}
+            initial={{ opacity: 0, y: 24, scale: 0.97, filter: "blur(8px)" }}
+            animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+            exit={{ opacity: 0, y: 12, scale: 0.98, filter: "blur(6px)" }}
+            transition={{ duration: 0.4, ease: EASE }}
             onClick={(e) => e.stopPropagation()}
-            className="card max-h-[90svh] w-full max-w-[460px] overflow-y-auto bg-panel p-6"
+            className="relative max-h-[92svh] w-full max-w-[560px] overflow-y-auto rounded-3xl bg-[#0e0f11] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_0_1px_rgba(255,255,255,0.1),0_40px_120px_-30px_rgba(0,0,0,0.95)] sm:p-7"
           >
-            <h3 className="text-[18px] font-medium">{title}</h3>
-            {children}
+            <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+            <div className="pointer-events-none absolute -top-24 left-1/2 h-48 w-[80%] -translate-x-1/2 rounded-[50%] bg-[radial-gradient(closest-side,rgba(255,255,255,0.07),transparent)]" />
+            <div className="relative flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-[20px] font-medium tracking-[-0.02em]">{title}</h3>
+                {desc && <p className="mt-1.5 text-[13.5px] leading-relaxed text-muted">{desc}</p>}
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Zamknij"
+                className="-mr-1 -mt-1 flex size-8 shrink-0 items-center justify-center rounded-full text-dim transition-colors hover:bg-white/[0.06] hover:text-fg"
+              >
+                <svg viewBox="0 0 16 16" className="size-4" aria-hidden>
+                  <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
+            <div className="relative">{children}</div>
           </motion.div>
         </motion.div>
       )}

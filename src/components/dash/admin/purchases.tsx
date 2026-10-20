@@ -7,28 +7,36 @@ import type { AdminPurchase } from "@/lib/server/admin-data";
 import { IconPlus, IconSearch } from "../../icons";
 import { McHead } from "../../mc-head";
 import { Block, Input, PageHeader, Pill, Table, Td } from "../ui";
-import { BILLING_LABEL, Btn, date, KeyBox, Label, Modal, NoticeBar, RowAction, Select, TextArea, zl, type Notice } from "./kit";
+import { BILLING_LABEL, Btn, date, Modal, NoticeBar, RowAction, TextArea, zl, type Notice } from "./kit";
+import { AmountInput, BillingPicker, FieldLabel, PlanPicker, SuccessKey, UserPicker, type Billing, type PickUser } from "./pickers";
 
-function AddPurchase({ plans, emails, onDone }: { plans: Plan[]; emails: string[]; onDone: (n: Notice) => void }) {
+function AddPurchase({ plans, users, onDone }: { plans: Plan[]; users: PickUser[]; onDone: (n: Notice) => void }) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
-  const [planId, setPlanId] = useState(plans[0]?.id ?? "");
-  const [billing, setBilling] = useState<"monthly" | "lifetime">("monthly");
-  const [amount, setAmount] = useState(String(plans[0]?.monthly ?? ""));
+  const [planId, setPlanId] = useState(plans.find((p) => p.featured)?.id ?? plans[0]?.id ?? "");
+  const [billing, setBilling] = useState<Billing>("monthly");
+  const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [notice, setNotice] = useState<Notice>(null);
   const [key, setKey] = useState<string | null>(null);
   const [busy, start] = useTransition();
 
-  const price = (id: string, b: "monthly" | "lifetime") => {
+  const plan = plans.find((p) => p.id === planId) ?? null;
+  const suggested = plan ? (billing === "monthly" ? plan.monthly : plan.lifetime) : null;
+  const choose = (id: string, b: Billing) => {
     const p = plans.find((x) => x.id === id);
+    setPlanId(id);
+    setBilling(b);
     if (p) setAmount(String(b === "monthly" ? p.monthly : p.lifetime));
   };
-  const reset = () => {
+
+  const openModal = () => {
     setEmail("");
     setNote("");
     setNotice(null);
     setKey(null);
+    choose(planId, billing);
+    setOpen(true);
   };
 
   const submit = () =>
@@ -43,81 +51,52 @@ function AddPurchase({ plans, emails, onDone }: { plans: Plan[]; emails: string[
 
   return (
     <>
-      <button
-        onClick={() => {
-          reset();
-          setOpen(true);
-        }}
-        className="inline-flex h-8 items-center gap-1.5 rounded-full bg-fg px-3.5 text-[13px] font-medium text-bg transition-colors hover:bg-[#e4e5e7]"
-      >
+      <button onClick={openModal} className="inline-flex h-8 items-center gap-1.5 rounded-full bg-fg px-3.5 text-[13px] font-medium text-bg transition-colors hover:bg-[#e4e5e7]">
         <IconPlus className="size-3.5" />
         Dodaj zakup
       </button>
-      <Modal open={open} onClose={() => setOpen(false)} title="Nowy zakup">
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title={key ? "Zakup zapisany" : "Nowy zakup"}
+        desc={key ? undefined : "Zapisz płatność z Discorda. Licencja utworzy się sama, a klient zobaczy pakiet w swoim panelu."}
+      >
         {key ? (
-          <>
-            <p className="mt-2 text-[14px] text-muted">Zakup zapisany. Klucz znajdziesz też w zakładce Licencje. Kliknij go, żeby skopiować.</p>
-            <KeyBox value={key} />
-            <div className="mt-6 flex justify-end">
-              <Btn primary onClick={() => setOpen(false)}>
-                Gotowe
-              </Btn>
-            </div>
-          </>
+          <SuccessKey licenseKey={key} onClose={() => setOpen(false)} text="Klient ma już pakiet w panelu. Klucz znajdziesz też w zakładce Licencje." />
         ) : (
           <form
             onSubmit={(e) => {
               e.preventDefault();
               submit();
             }}
+            className="mt-6 space-y-5"
           >
-            <p className="mt-2 text-[14px] leading-relaxed text-muted">Płatności idą przez Discorda, więc tutaj zapisujesz to, co klient zapłacił. Licencja utworzy się sama.</p>
-            <div className="mt-5 space-y-4">
-              <Label label="E-mail konta klienta" hint="Klient musi mieć założone konto na stronie.">
-                <Input value={email} onChange={(e) => setEmail(e.target.value)} list="purchase-emails" type="email" required placeholder="gracz@serwer.pl" className="w-full" />
-                <datalist id="purchase-emails">
-                  {emails.map((e) => (
-                    <option key={e} value={e} />
-                  ))}
-                </datalist>
-              </Label>
-              <div className="grid grid-cols-2 gap-3">
-                <Label label="Plan">
-                  <Select
-                    value={planId}
-                    onChange={(v) => {
-                      setPlanId(v);
-                      price(v, billing);
-                    }}
-                    options={plans.map((p) => ({ value: p.id, label: p.name }))}
-                  />
-                </Label>
-                <Label label="Okres">
-                  <Select
-                    value={billing}
-                    onChange={(v) => {
-                      const b = v as "monthly" | "lifetime";
-                      setBilling(b);
-                      price(planId, b);
-                    }}
-                    options={[
-                      { value: "monthly", label: "Miesięcznie" },
-                      { value: "lifetime", label: "Dożywotnio" },
-                    ]}
-                  />
-                </Label>
-              </div>
-              <Label label="Kwota (zł)" hint={billing === "monthly" ? "Jeśli klient ma już aktywną licencję miesięczną na ten plan, przedłużymy ją o 30 dni." : undefined}>
-                <Input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" required className="w-full" />
-              </Label>
-              <Label label="Notatka" hint="Np. nick na Discordzie albo numer transakcji. Widzą ją tylko administratorzy.">
-                <TextArea value={note} onChange={setNote} rows={2} />
-              </Label>
+            <div>
+              <FieldLabel>Klient</FieldLabel>
+              <UserPicker users={users} value={email} onChange={setEmail} />
+            </div>
+            <div>
+              <FieldLabel>Okres</FieldLabel>
+              <BillingPicker value={billing} onChange={(b) => choose(planId, b)} />
+            </div>
+            <div>
+              <FieldLabel>Pakiet</FieldLabel>
+              <PlanPicker plans={plans} value={planId} billing={billing} onChange={(id) => choose(id, billing)} />
+            </div>
+            <div>
+              <FieldLabel hint={billing === "monthly" ? "Aktywny pakiet miesięczny przedłuży się o 30 dni" : undefined}>Zapłacona kwota</FieldLabel>
+              <AmountInput value={amount} onChange={setAmount} suggested={suggested} />
+            </div>
+            <div>
+              <FieldLabel hint="widzą tylko admini">Notatka</FieldLabel>
+              <TextArea value={note} onChange={setNote} rows={2} placeholder="Np. nick na Discordzie albo numer transakcji" />
             </div>
             <NoticeBar notice={notice} />
-            <div className="mt-6 flex justify-end gap-2">
-              <Btn onClick={() => setOpen(false)}>Anuluj</Btn>
-              <Btn primary type="submit" busy={busy}>
+            <div className="flex gap-2 pt-1">
+              <Btn onClick={() => setOpen(false)} className="flex-1 sm:flex-none">
+                Anuluj
+              </Btn>
+              <Btn primary type="submit" busy={busy} disabled={!email || !planId || !amount} className="flex-1">
                 Zapisz zakup
               </Btn>
             </div>
@@ -128,7 +107,7 @@ function AddPurchase({ plans, emails, onDone }: { plans: Plan[]; emails: string[
   );
 }
 
-export function AdminPurchases({ purchases, plans, emails }: { purchases: AdminPurchase[]; plans: Plan[]; emails: string[] }) {
+export function AdminPurchases({ purchases, plans, users }: { purchases: AdminPurchase[]; plans: Plan[]; users: PickUser[] }) {
   const [q, setQ] = useState("");
   const [notice, setNotice] = useState<Notice>(null);
   const [pending, start] = useTransition();
@@ -140,7 +119,7 @@ export function AdminPurchases({ purchases, plans, emails }: { purchases: AdminP
       <PageHeader
         title="Zakupy"
         desc={`${paid.length} opłaconych · ${zl(paid.reduce((a, p) => a + p.amount, 0))} łącznie`}
-        actions={<AddPurchase plans={plans} emails={emails} onDone={setNotice} />}
+        actions={<AddPurchase plans={plans} users={users} onDone={setNotice} />}
       />
       <NoticeBar notice={notice} className="mb-4" />
       <Block pad={false}>

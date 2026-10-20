@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "motion/react";
 import { useState, useTransition } from "react";
 import { grantPackageAction, setUserRoleAction } from "@/lib/admin-actions";
 import type { Plan } from "@/lib/content";
@@ -8,8 +7,8 @@ import type { AdminUser } from "@/lib/server/admin-data";
 import { IconSearch } from "../../icons";
 import { McHead } from "../../mc-head";
 import { Block, Input, PageHeader, Pill, Table, Td } from "../ui";
-import { EASE } from "../../ui";
-import { Btn, date, KeyBox, Modal, NoticeBar, RowAction, zl, type Notice } from "./kit";
+import { Btn, date, Modal, NoticeBar, RowAction, zl, type Notice } from "./kit";
+import { BillingPicker, FieldLabel, PlanPicker, SuccessKey, type Billing } from "./pickers";
 
 type Filter = "all" | "verified" | "unverified" | "buyers";
 const FILTERS: { id: Filter; label: string }[] = [
@@ -21,7 +20,7 @@ const FILTERS: { id: Filter; label: string }[] = [
 
 function GrantPackage({ user, plans, onClose, onDone }: { user: AdminUser | null; plans: Plan[]; onClose: () => void; onDone: (n: Notice) => void }) {
   const [planId, setPlanId] = useState(plans.find((p) => p.featured)?.id ?? plans[0]?.id ?? "");
-  const [billing, setBilling] = useState<"monthly" | "lifetime">("lifetime");
+  const [billing, setBilling] = useState<Billing>("lifetime");
   const [notice, setNotice] = useState<Notice>(null);
   const [key, setKey] = useState<string | null>(null);
   const [busy, start] = useTransition();
@@ -44,87 +43,40 @@ function GrantPackage({ user, plans, onClose, onDone }: { user: AdminUser | null
     });
 
   return (
-    <Modal open={!!user} onClose={close} title={key ? "Pakiet nadany" : "Nadaj pakiet"}>
+    <Modal open={!!user} onClose={close} title={key ? "Pakiet nadany" : "Nadaj pakiet"} desc={key ? undefined : "Konto od razu dostanie licencję, ustawienia anticheata i pobieranie pluginu."}>
       {user && (
         <>
-          <div className="mt-4 flex items-center gap-3 rounded-xl bg-white/[0.03] p-3 shadow-[0_0_0_1px_rgba(255,255,255,0.06)]">
-            <McHead name={user.nick} className="size-10 rounded-lg" />
-            <div className="min-w-0">
-              <div className="text-[14.5px] font-medium">{user.nick}</div>
+          <div className="mt-6 flex items-center gap-3 rounded-2xl bg-white/[0.03] p-3 shadow-[0_0_0_1px_rgba(255,255,255,0.07)]">
+            <McHead name={user.nick} className="size-11 rounded-xl" />
+            <div className="min-w-0 flex-1">
+              <div className="text-[15px] font-medium">{user.nick}</div>
               <div className="truncate text-[12.5px] text-dim">{user.email}</div>
             </div>
+            {user.activeLicenses > 0 && <Pill tone="ok">{user.activeLicenses} aktywny pakiet</Pill>}
           </div>
 
           {key ? (
-            <>
-              <p className="mt-5 text-[14px] leading-relaxed text-muted">
-                Gotowe. {user.nick} widzi już pakiet w swoim panelu, razem z ustawieniami anticheata i pobieraniem pluginu. Klucz licencji:
-              </p>
-              <KeyBox value={key} />
-              <div className="mt-6 flex justify-end">
-                <Btn primary onClick={close}>
-                  Zamknij
-                </Btn>
-              </div>
-            </>
+            <SuccessKey licenseKey={key} onClose={close} text={`${user.nick} widzi już pakiet w swoim panelu, razem z ustawieniami anticheata i pobieraniem pluginu.`} />
           ) : (
-            <>
-              <div className="mt-5 text-[13px] text-muted">Pakiet</div>
-              <div className="mt-2 grid gap-2">
-                {plans.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setPlanId(p.id)}
-                    className={`relative flex items-center justify-between rounded-xl px-4 py-3 text-left transition-colors ${planId === p.id ? "text-fg" : "text-muted hover:bg-white/[0.03]"}`}
-                  >
-                    {planId === p.id && (
-                      <motion.span
-                        layoutId="grant-plan"
-                        className="absolute inset-0 rounded-xl bg-white/[0.06] shadow-[0_0_0_1px_rgba(255,255,255,0.3)]"
-                        transition={{ type: "spring", stiffness: 500, damping: 38 }}
-                      />
-                    )}
-                    <span className="relative">
-                      <span className="block text-[14.5px] font-medium">{p.name}</span>
-                      <span className="block text-[12.5px] text-dim">{p.features[0]}</span>
-                    </span>
-                    <span className="relative text-right text-[12.5px] tabular-nums text-dim">
-                      {p.monthly} zł / mies.
-                      <br />
-                      {p.lifetime} zł na zawsze
-                    </span>
-                  </button>
-                ))}
+            <div className="mt-5 space-y-5">
+              <div>
+                <FieldLabel>Okres</FieldLabel>
+                <BillingPicker value={billing} onChange={setBilling} />
               </div>
-
-              <div className="mt-5 text-[13px] text-muted">Okres</div>
-              <div className="mt-2 grid grid-cols-2 gap-1 rounded-full bg-white/[0.03] p-1 shadow-[0_0_0_1px_rgba(255,255,255,0.08)]">
-                {(["monthly", "lifetime"] as const).map((b) => (
-                  <button
-                    key={b}
-                    type="button"
-                    onClick={() => setBilling(b)}
-                    className={`relative h-9 rounded-full text-[13.5px] transition-colors ${billing === b ? "text-bg" : "text-muted hover:text-fg"}`}
-                  >
-                    {billing === b && <motion.span layoutId="grant-billing" className="absolute inset-0 rounded-full bg-fg" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
-                    <span className="relative">{b === "monthly" ? "30 dni" : "Dożywotnio"}</span>
-                  </button>
-                ))}
+              <div>
+                <FieldLabel>Pakiet</FieldLabel>
+                <PlanPicker plans={plans} value={planId} billing={billing} onChange={setPlanId} />
               </div>
-
-              <motion.p key={billing} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, ease: EASE }} className="mt-3 text-[12.5px] leading-relaxed text-dim">
-                {billing === "monthly" ? "Pakiet wygaśnie za 30 dni. Przedłużysz go w zakładce Licencje albo dodając zakup." : "Pakiet nie wygasa. Możesz go wstrzymać w każdej chwili w zakładce Licencje."}
-              </motion.p>
-
               <NoticeBar notice={notice} />
-              <div className="mt-6 flex justify-end gap-2">
-                <Btn onClick={close}>Anuluj</Btn>
-                <Btn primary busy={busy} disabled={!planId} onClick={submit}>
+              <div className="flex gap-2 pt-1">
+                <Btn onClick={close} className="flex-1 sm:flex-none">
+                  Anuluj
+                </Btn>
+                <Btn primary busy={busy} disabled={!planId} onClick={submit} className="flex-1">
                   Nadaj pakiet
                 </Btn>
               </div>
-            </>
+            </div>
           )}
         </>
       )}

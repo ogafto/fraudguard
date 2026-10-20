@@ -83,6 +83,14 @@ const SCHEMA = [
     data jsonb not null,
     updated_at timestamptz not null default now()
   )`,
+  `alter table purchases add column if not exists note text`,
+  `alter table purchases add column if not exists created_by text`,
+  `alter table purchases add column if not exists currency text not null default 'pln'`,
+  `alter table purchases alter column status set default 'paid'`,
+  `alter table licenses add column if not exists purchase_id text references purchases(id) on delete set null`,
+  `alter table licenses add column if not exists expires_at timestamptz`,
+  `alter table users add column if not exists role text not null default 'client'`,
+  `alter table users add column if not exists email_verified_at timestamptz`,
   `create table if not exists releases (
     id text primary key,
     version text not null,

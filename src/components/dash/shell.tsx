@@ -72,6 +72,41 @@ const NAV: Record<"client" | "admin", { label: string; items: NavItem[] }[]> = {
   ],
 };
 
+function PanelSwitch({ variant, onNavigate }: { variant: "client" | "admin"; onNavigate?: () => void }) {
+  const router = useRouter();
+  const [target, setTarget] = useState(variant);
+  const items = [
+    { id: "client" as const, label: "Klient", href: "/panel", Icon: IconGrid },
+    { id: "admin" as const, label: "Admin", href: "/admin", Icon: IconChart },
+  ];
+  return (
+    <div className="mt-3 grid grid-cols-2 gap-0.5 rounded-xl bg-white/[0.03] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(255,255,255,0.07)]">
+      {items.map(({ id, label, href, Icon }) => (
+        <button
+          key={id}
+          onClick={() => {
+            if (id === variant) return;
+            setTarget(id);
+            onNavigate?.();
+            router.push(href);
+          }}
+          className={`relative flex h-8 items-center justify-center gap-1.5 rounded-lg text-[13px] font-medium transition-colors duration-300 ${target === id ? "text-bg" : "text-muted hover:text-fg"}`}
+        >
+          {target === id && (
+            <motion.span
+              layoutId="panel-switch"
+              className="absolute inset-0 rounded-lg bg-fg shadow-[0_6px_20px_-8px_rgba(255,255,255,0.5)]"
+              transition={{ type: "spring", stiffness: 480, damping: 36 }}
+            />
+          )}
+          <Icon className="relative size-3.5" />
+          <span className="relative">{label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function Sidebar({ variant, user, onNavigate }: { variant: "client" | "admin"; user: DashUser; onNavigate?: () => void }) {
   const pathname = usePathname();
   const isActive = (href: string) => (href === "/panel" || href === "/admin" ? pathname === href : pathname.startsWith(href));
@@ -83,10 +118,10 @@ function Sidebar({ variant, user, onNavigate }: { variant: "client" | "admin"; u
           <LogoMark className="size-4 text-bg" />
         </span>
         <span className="text-[14.5px] font-semibold tracking-[-0.01em]">FraudGuard</span>
-        <span className="ml-auto rounded-md bg-white/[0.06] px-1.5 py-0.5 text-[11px] font-medium text-muted">
-          {variant === "admin" ? "Admin" : "Panel"}
-        </span>
+        {user.role !== "admin" && <span className="ml-auto rounded-md bg-white/[0.06] px-1.5 py-0.5 text-[11px] font-medium text-muted">Panel</span>}
       </Link>
+
+      {user.role === "admin" && <PanelSwitch variant={variant} onNavigate={onNavigate} />}
 
       <nav className="mt-5 flex-1 space-y-6 overflow-y-auto">
         {NAV[variant].map((group) => (
@@ -260,13 +295,7 @@ function TopBar({ variant, user, onSearch }: { variant: "client" | "admin"; user
             <span className={`size-1.5 rounded-full ${user.plan ? "animate-pulse-dot bg-ok text-ok/50" : "bg-dim"}`} />
             {user.plan ? `Pakiet ${user.plan} aktywny` : "Brak pakietu"}
           </Link>
-        ) : (
-          user.role === "admin" && (
-            <Link href="/panel" className="rounded-full px-3 py-1.5 text-[12.5px] text-muted shadow-[0_0_0_1px_rgba(255,255,255,0.07)] transition-colors hover:text-fg">
-              Mój panel klienta
-            </Link>
-          )
-        )}
+        ) : null}
         <button
           onClick={onSearch}
           className="flex h-9 w-56 items-center gap-2.5 rounded-full bg-white/[0.03] px-3.5 text-[13px] text-dim shadow-[0_0_0_1px_rgba(255,255,255,0.08)] transition-colors hover:bg-white/[0.05] hover:text-muted"

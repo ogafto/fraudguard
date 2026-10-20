@@ -199,7 +199,7 @@ function AlertsTable({ active }: { active: boolean }) {
               className="grid grid-cols-[1.6fr_1.1fr_1.2fr_0.5fr_0.8fr_0.5fr] items-center gap-4 border-b border-line/60 px-4 py-[9px] text-[12.5px]"
             >
               <span className="flex min-w-0 items-center gap-2.5">
-                <McHead name={a.player} className="size-[18px] shrink-0 rounded-[3px]" />
+                <McHead name={a.player} real={false} className="size-[18px] shrink-0 rounded-[3px]" />
                 <span className="truncate text-fg">{a.player}</span>
               </span>
               <span className="text-muted">{a.check}</span>
@@ -297,7 +297,7 @@ export function Panel() {
             <span className="size-1.5 animate-pulse-dot rounded-full bg-ok text-ok/50" />
             Na żywo
           </span>
-          <McHead name="Admin" className="ml-2 size-6 rounded-md" />
+          <McHead name="aftoxd" className="ml-2 size-6 rounded-md" />
         </header>
 
         <div className="grid flex-1 grid-cols-[1fr_272px] gap-4 overflow-hidden p-5">

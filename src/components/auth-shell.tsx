@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { AUTH_DEMO, login, register, requestPasswordReset, resendCode, resetPassword, verifyEmail, type AuthResult } from "@/lib/auth";
 import { Field, FormError, OtpInput, PasswordField, SubmitButton } from "./form";
-import { IconDiscord } from "./icons";
 import { Wordmark } from "./logo";
 import { McHead } from "./mc-head";
 import { McText } from "./mc-ui";
@@ -38,33 +37,66 @@ function Title({ children, sub }: { children: ReactNode; sub?: ReactNode }) {
   );
 }
 
-function NickHead({ nick }: { nick: string }) {
-  const [shown, setShown] = useState(nick);
+function useDebounced(value: string, ms = 450) {
+  const [v, setV] = useState(value);
   useEffect(() => {
-    const id = setTimeout(() => setShown(nick.trim()), 450);
+    const id = setTimeout(() => setV(value.trim()), ms);
     return () => clearTimeout(id);
-  }, [nick]);
-  const own = shown.toLowerCase() === "aftoxd";
+  }, [value, ms]);
+  return v;
+}
+
+function NickHead({ nick }: { nick: string }) {
+  const shown = useDebounced(nick);
   const valid = /^[A-Za-z0-9_]{3,16}$/.test(shown);
   return (
     <span className="relative block size-6 overflow-hidden rounded-md">
       <AnimatePresence mode="popLayout" initial={false}>
         <motion.span
-          key={valid ? shown : "default"}
+          key={valid ? shown.toLowerCase() : "default"}
           className="absolute inset-0"
           initial={{ opacity: 0, scale: 0.6, rotate: -20 }}
           animate={{ opacity: 1, scale: 1, rotate: 0 }}
           exit={{ opacity: 0, scale: 0.6 }}
           transition={{ type: "spring", stiffness: 300, damping: 20 }}
         >
-          {valid && !own ? (
-            <img src={`https://mc-heads.net/avatar/${shown}/48`} alt="" className="size-full [image-rendering:pixelated]" />
-          ) : (
-            <McHead name={own ? "aftoxd" : "steve"} className="size-full" />
-          )}
+          <McHead name={valid ? shown : "steve"} real={valid} className="size-full" />
         </motion.span>
       </AnimatePresence>
     </span>
+  );
+}
+
+function NickStatus({ nick }: { nick: string }) {
+  const shown = useDebounced(nick);
+  const valid = /^[A-Za-z0-9_]{3,16}$/.test(shown);
+  const [found, setFound] = useState<{ nick: string; ok: boolean } | null>(null);
+  useEffect(() => {
+    if (!valid) return;
+    let alive = true;
+    fetch(`/api/skin/${encodeURIComponent(shown)}`, { redirect: "manual" })
+      .then((r) => alive && setFound({ nick: shown, ok: r.type !== "opaqueredirect" && r.ok && r.headers.get("X-Skin") === "player" }))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [shown, valid]);
+  const state = valid && found?.nick === shown ? found.ok : null;
+  return (
+    <AnimatePresence initial={false}>
+      {state !== null && (
+        <motion.p
+          key={String(state)}
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.25, ease: EASE }}
+          className={`overflow-hidden text-[12.5px] ${state ? "text-ok" : "text-dim"}`}
+        >
+          <span className="block pt-2">{state ? "Znaleźliśmy Twój skin." : "Nie ma takiego gracza w Minecraft, pokażemy domyślny skin."}</span>
+        </motion.p>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -177,25 +209,6 @@ function RedirectBar({ to, seconds = 3 }: { to: string; seconds?: number }) {
   );
 }
 
-function DiscordButton() {
-  return (
-    <>
-      <button
-        type="button"
-        className="flex h-12 w-full items-center justify-center gap-2.5 rounded-full bg-white/[0.04] text-[14.5px] font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_0_1px_rgba(255,255,255,0.1)] transition-colors hover:bg-white/[0.08]"
-      >
-        <IconDiscord className="size-4" />
-        Kontynuuj przez Discord
-      </button>
-      <div className="my-7 flex items-center gap-4 text-[13px] text-dim">
-        <span className="h-px flex-1 bg-line" />
-        lub e-mailem
-        <span className="h-px flex-1 bg-line" />
-      </div>
-    </>
-  );
-}
-
 export function AuthShell({ mode }: { mode: "login" | "register" | "newPassword" }) {
   const [step, setStep] = useState<Step>(mode);
   const [busy, setBusy] = useState(false);
@@ -286,10 +299,7 @@ export function AuthShell({ mode }: { mode: "login" | "register" | "newPassword"
             {step === "register" && (
               <Screen id="register">
                 <Title sub="Zajmie Ci to mniej niż minutę.">Załóż konto FraudGuard</Title>
-                <div className="mt-9">
-                  <DiscordButton />
-                </div>
-                <form onSubmit={onRegister} className="space-y-4">
+                <form onSubmit={onRegister} className="mt-9 space-y-4">
                   <Field
                     label="Nick w Minecraft"
                     name="nick"
@@ -299,6 +309,9 @@ export function AuthShell({ mode }: { mode: "login" | "register" | "newPassword"
                     onChange={setNick}
                     adornment={<NickHead nick={nick} />}
                   />
+                  <div className="!mt-0">
+                    <NickStatus nick={nick} />
+                  </div>
                   <Field label="E-mail" name="email" type="email" placeholder="ty@serwer.pl" autoComplete="email" value={email} onChange={setEmail} />
                   <PasswordField value={password} onChange={setPassword} meter autoComplete="new-password" />
                   <label className="flex cursor-pointer items-start gap-3 pt-1 text-[13.5px] leading-relaxed text-muted">
@@ -401,10 +414,7 @@ export function AuthShell({ mode }: { mode: "login" | "register" | "newPassword"
             {step === "login" && (
               <Screen id="login">
                 <Title sub="Pobierz plugin i zarządzaj licencjami.">Zaloguj się do FraudGuard</Title>
-                <div className="mt-9">
-                  <DiscordButton />
-                </div>
-                <form onSubmit={onLogin} className="space-y-4">
+                <form onSubmit={onLogin} className="mt-9 space-y-4">
                   <Field label="E-mail" name="email" type="email" placeholder="ty@serwer.pl" autoComplete="email" value={email} onChange={setEmail} />
                   <PasswordField value={password} onChange={setPassword} autoComplete="current-password" />
                   <div className="flex justify-end">

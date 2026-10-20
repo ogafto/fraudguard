@@ -9,5 +9,5 @@ export const metadata: Metadata = { title: "Licencje | FraudGuard Admin" };
 export default async function Page() {
   await requireAdminUser();
   const [licenses, users, pricing] = await Promise.all([listLicenses(), listUsers(), getPublishedContent("pricing")]);
-  return <AdminLicenses licenses={licenses} plans={pricing.plans} emails={users.filter((u) => u.verified).map((u) => u.email)} />;
+  return <AdminLicenses licenses={licenses} plans={pricing.plans} users={users.filter((u) => u.verified).map((u) => ({ email: u.email, nick: u.nick, verified: u.verified }))} />;
 }
